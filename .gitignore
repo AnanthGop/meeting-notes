@@ -1,0 +1,10 @@
+# Never commit a completed glossary — it names real people and internal thresholds.
+meeting-report-glossary.md
+
+# Never commit transcripts or generated reports.
+*.rtf
+*.vtt
+Meeting_Report_*.xlsx
+Goonj_Meeting_Report_*.xlsx
+
+.DS_Store

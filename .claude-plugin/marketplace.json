@@ -1,0 +1,17 @@
+{
+  "name": "goonj-skills",
+  "owner": {
+    "name": "Goonj — Technology"
+  },
+  "metadata": {
+    "description": "Shared Claude skills for Goonj teams.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "goonj-meetings-skill",
+      "source": "./plugins/goonj-meetings-skill",
+      "description": "Turns a meeting transcript into a bilingual English/Hindi Excel report — key points, action items with owner and due date, decisions taken vs deferred, open questions, risks, and open items carried forward."
+    }
+  ]
+}
