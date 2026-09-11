@@ -9,6 +9,36 @@ from the previous meeting in the same workstream.
 
 ---
 
+## What the computer needs
+
+Claude runs this plugin's scripts on the computer where it is running — nothing is sent to a
+server by the scripts, and nothing comes bundled. So that computer needs, once:
+
+1. **Python 3** (3.9 or newer).
+   - **Mac:** open Terminal, type `python3` and press Return. If it is not installed, macOS
+     offers to install Apple's Command Line Tools, which include it. Accept and wait.
+   - **Windows:** install from [python.org](https://www.python.org/downloads/) and tick
+     **"Add python.exe to PATH"** in the installer.
+2. **The openpyxl library** (writes the Excel file). In Terminal or Command Prompt:
+
+   ```bash
+   python3 -m pip install openpyxl
+   ```
+
+3. **LibreOffice** ([libreoffice.org](https://www.libreoffice.org/download/), free) —
+   **optional on a Mac**, where transcripts convert with the built-in `textutil` and Excel
+   computes the Summary counts when the file is opened. **Needed on Windows and Linux** if your
+   transcripts arrive as `.rtf` or `.docx`; `.txt` and `.vtt` transcripts need nothing extra.
+
+To check the computer is ready, paste this and look for the word `ready`:
+
+```bash
+python3 -c "import openpyxl; print('ready')"
+```
+
+If something is missing when a report is requested, the skill stops and says exactly what to
+install rather than guessing.
+
 ## Install (one time)
 
 You need a paid Claude plan — Pro, Max, Team or Enterprise. Plugins are not available on
@@ -59,9 +89,11 @@ The workbook is written next to the transcript as
 
 ## उपयोग कैसे करें (संक्षेप में)
 
-1. Claude डेस्कटॉप ऐप में **Customize → Plugins → Add from a repository** से यह प्लगइन जोड़ें।
-2. अपने ट्रांसक्रिप्ट फ़ोल्डर में `meeting-report-glossary.md` फ़ाइल रखें (टेम्पलेट ऊपर बताए पथ पर है)।
-3. फिर बस इतना कहें: "3 सितंबर की Leadership मीटिंग की रिपोर्ट बना दीजिए"।
+1. कंप्यूटर पर **Python 3** और **openpyxl** होना चाहिए (Windows पर `.rtf`/`.docx` के लिए
+   **LibreOffice** भी)। कैसे लगाएँ, ऊपर *What the computer needs* में देखें।
+2. Claude डेस्कटॉप ऐप में **Customize → Plugins → Add from a repository** से यह प्लगइन जोड़ें।
+3. अपने ट्रांसक्रिप्ट फ़ोल्डर में `meeting-report-glossary.md` फ़ाइल रखें (टेम्पलेट ऊपर बताए पथ पर है)।
+4. फिर बस इतना कहें: "3 सितंबर की Leadership मीटिंग की रिपोर्ट बना दीजिए"।
 
 पहले एक सवाल पूछा जाएगा — रिपोर्ट **केवल अंग्रेज़ी** में चाहिए या **अंग्रेज़ी + हिन्दी** दोनों में?
 फ़ील्ड टीमों के लिए हिन्दी चुनें। हिन्दी न चुनने पर अनुवाद होगा ही नहीं, और रिपोर्ट तेज़ी से बनेगी।
@@ -120,11 +152,10 @@ example. They build and verify clean, so after any script change run:
 python3 plugins/goonj-meetings-skill/skills/meeting-report/scripts/build_report.py plugins/goonj-meetings-skill/skills/meeting-report/reference/example-content.json --out /tmp/example.xlsx --no-recalc && python3 plugins/goonj-meetings-skill/skills/meeting-report/scripts/verify_report.py /tmp/example.xlsx plugins/goonj-meetings-skill/skills/meeting-report/reference/example-transcript.txt
 ```
 
-All scripts need `openpyxl` (`pip install openpyxl`). `build_report.py` finds LibreOffice on
-Linux, macOS and Windows; if it is not installed the workbook is still correct — Excel
-recalculates on open — but `verify_report.py` cannot check the counts. Set `SOFFICE=/path/to/soffice`
-to point at a non-standard install. On a Mac without LibreOffice, transcripts still convert
-through `textutil`.
+Prerequisites are listed under *What the computer needs* above. `build_report.py` finds
+LibreOffice on Linux, macOS and Windows; if it is not installed the workbook is still correct —
+Excel recalculates on open — but `verify_report.py` cannot check the counts. Set
+`SOFFICE=/path/to/soffice` to point at a non-standard install.
 
 ## Maintainers
 

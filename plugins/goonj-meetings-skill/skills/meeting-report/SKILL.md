@@ -58,6 +58,12 @@ If there is no glossary, say so once, work from the transcript alone, mark name-
 
 ## Step 3 — Convert the transcript
 
+**Preflight first:** `python3 -c "import openpyxl"`. If `python3` is not found or the import
+fails, **stop and tell the user what to install** — the README section *What the computer needs*
+has the steps (Python 3, then `python3 -m pip install openpyxl`; LibreOffice on Windows/Linux for
+`.rtf`/`.docx`). If only openpyxl is missing, offer to run the pip command for them. Never
+hand-roll a converter or a workbook to get around a missing dependency.
+
 ```bash
 python3 <skill-dir>/scripts/to_text.py "<file>.rtf" --outdir <tmp>
 ```
