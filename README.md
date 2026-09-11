@@ -79,17 +79,42 @@ install rather than guessing.
 You need a paid Claude plan — Pro, Max, Team or Enterprise. Plugins are not available on
 the free tier.
 
+### In the Claude desktop app
+
 1. Open the **Claude desktop app**. If you are in Cowork, open the **Cowork** tab first.
 2. In the left sidebar, open **Customize**, then the **Plugins** tab.
 3. Choose **Add from a repository** and paste `https://github.com/AnanthGop/meeting-notes`.
 4. Install the **goonj-meetings-skill** plugin.
 
-Command line, if you prefer:
+### In the terminal (Claude Code CLI)
+
+If you do not have Claude Code yet, install it — Mac:
 
 ```bash
-/plugin marketplace add AnanthGop/meeting-notes
-/plugin install goonj-meetings-skill@goonj-skills
+curl -fsSL https://claude.ai/install.sh | bash
 ```
+
+Windows (PowerShell):
+
+```powershell
+irm https://claude.ai/install.ps1 | iex
+```
+
+Check with `claude --version`, then run `claude` once and follow the login prompt in your
+browser. After that, register this repository and install the plugin — two commands, from any
+folder:
+
+```bash
+claude plugin marketplace add AnanthGop/meeting-notes
+```
+
+```bash
+claude plugin install goonj-meetings-skill@goonj-skills
+```
+
+The plugin loads the next time you start `claude`. (Inside a running session the same two
+commands work with a leading slash: `/plugin marketplace add AnanthGop/meeting-notes` and
+`/plugin install goonj-meetings-skill@goonj-skills`; the session then reloads it for you.)
 
 ## Set up the glossary (one time, per transcripts folder)
 
@@ -107,9 +132,32 @@ you do not need to create one.
 
 ## Use it
 
-Connect your transcripts folder, then ask in plain language:
+**Desktop app:** connect your transcripts folder, then ask in plain language:
 
 > Make a meeting report from the 3 September Leadership transcript
+
+**Terminal:** start Claude Code *in the transcripts folder*, so it can see the transcript, the
+glossary and earlier reports:
+
+```bash
+cd "/path/to/Meeting Transcripts/Leadership"
+```
+
+```bash
+claude
+```
+
+Then ask in the same plain language, or call the skill by name:
+
+```text
+/goonj-meetings-skill:meeting-report the 3 September transcript, English only
+```
+
+For a one-shot run that exits when done, put the request on the command line:
+
+```bash
+claude "Make a meeting report from the 3 September Leadership transcript, English only"
+```
 
 It asks one question first — **English only, or English + Hindi?** English only is the default
 and is noticeably faster; choose it when the report is for office or leadership readers, and
@@ -126,7 +174,9 @@ The workbook is written next to the transcript as
 
 1. कंप्यूटर पर **Python 3** और **openpyxl** होना चाहिए (Windows पर `.rtf`/`.docx` के लिए
    **LibreOffice** भी)। कैसे लगाएँ, ऊपर *What the computer needs* में देखें।
-2. Claude डेस्कटॉप ऐप में **Customize → Plugins → Add from a repository** से यह प्लगइन जोड़ें।
+2. Claude डेस्कटॉप ऐप में **Customize → Plugins → Add from a repository** से यह प्लगइन जोड़ें,
+   या टर्मिनल में `claude plugin marketplace add AnanthGop/meeting-notes` और फिर
+   `claude plugin install goonj-meetings-skill@goonj-skills` चलाएँ।
 3. अपने ट्रांसक्रिप्ट फ़ोल्डर में `meeting-report-glossary.md` फ़ाइल रखें (टेम्पलेट ऊपर बताए पथ पर है)।
 4. फिर बस इतना कहें: "3 सितंबर की Leadership मीटिंग की रिपोर्ट बना दीजिए"।
 
@@ -195,8 +245,16 @@ Excel recalculates on open — but `verify_report.py` cannot check the counts. S
 ## Maintainers
 
 Bump `version` in `plugins/goonj-meetings-skill/.claude-plugin/plugin.json` on every change — that is what
-pushes the update to everyone who has the plugin installed. Users refresh with
-`/plugin marketplace update`.
+pushes the update to everyone who has the plugin installed. Users pick it up with:
+
+```bash
+claude plugin update goonj-meetings-skill@goonj-skills
+```
+
+or, inside a session, `/plugin marketplace update goonj-skills` followed by
+`/plugin install goonj-meetings-skill@goonj-skills`. Auto-update is off by default for
+third-party marketplaces; a user can switch it on once under `/plugin` → **Marketplaces** →
+**goonj-skills** → **Enable auto-update**.
 
 Never commit a completed `meeting-report-glossary.md`, a transcript, or a generated report.
 `.gitignore` blocks all three, but check before you push.
