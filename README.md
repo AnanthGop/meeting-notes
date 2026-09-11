@@ -200,7 +200,7 @@ The workbook is written next to the transcript as
 | Decisions | What was settled, and separately what was deferred and who it waits on |
 | Open Questions | Unresolved questions, each with a named person who owes an answer |
 | Risks and Compliance | Control gaps and exposure, written in business terms |
-| Carry Forward | Open items from earlier meetings and where each now stands |
+| Carry Forward | Open items from earlier meetings and where each now stands. Say "no carry forward" and the sheet is left out — the report then stands alone |
 | How to Use | Bilingual legend for every column and status value |
 
 Status, Priority and Confidence are dropdowns. Changing a Status updates the Summary

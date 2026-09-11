@@ -271,7 +271,9 @@ def rows_from(items, keys):
     return [tuple("" if it.get(k) is None else it.get(k, "") for k in keys) for it in items]
 
 
-def build(content, out_path, language="bilingual"):
+def build(content, out_path, language="bilingual", carry_forward=True):
+    """carry_forward=False leaves out the Carry Forward sheet together with its Summary count
+    and its How to Use entries, so nothing in the workbook points at a sheet that is not there."""
     english_only = language == "english"
     m = content.get("meeting", {})
     wb = Workbook()
@@ -302,6 +304,9 @@ def build(content, out_path, language="bilingual"):
             ("Source transcript / स्रोत", m.get("source", "")),
             ("Report language / रिपोर्ट की भाषा",
              "English only" if english_only else "English + Hindi / अंग्रेज़ी + हिन्दी")]
+    if not carry_forward:
+        meta.append(("Carry forward / पिछले लंबित विषय",
+                     "Not included — this report stands alone / शामिल नहीं — यह रिपोर्ट स्वतंत्र है"))
     r = 6
     for k, v in meta:
         a = ws.cell(row=r, column=2, value=k)
@@ -322,6 +327,8 @@ def build(content, out_path, language="bilingual"):
     ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=4)
     r += 1
     for k, f in STATS:
+        if not carry_forward and "Carry Forward" in f:
+            continue
         a = ws.cell(row=r, column=2, value=k)
         a.font = Font(name=HI, size=10)
         a.fill = PatternFill("solid", fgColor=LIGHT)
@@ -415,18 +422,20 @@ def build(content, out_path, language="bilingual"):
             formula=['"Medium"'], fill=PatternFill("solid", bgColor=AMBER)))
 
     # ---- Carry Forward ----
-    ws_c, last_c = _sheet(wb, "Carry Forward", C_HDR, C_W,
-        rows_from(content.get("carry_forward", []), C_KEYS), {3},
-        "Open items from earlier meetings, reconciled against what was said this time. This is what stops items quietly disappearing.",
-        "पिछली बैठकों के लंबित विषय, इस बार की चर्चा से मिलान करके। इसी से विषय चुपचाप ग़ायब होने से बचते हैं।")
-    dvc = DataValidation(type="list", formula1='"' + ",".join(CARRY_STATUSES) + '"', allow_blank=True)
-    ws_c.add_data_validation(dvc)
-    dvc.add("F3:F200")
-    if last_c >= 3:
-        for needle, colour in (("Still open", AMBER), ("Closed", GREEN)):
-            ws_c.conditional_formatting.add(f"F3:F{last_c}", FormulaRule(
-                formula=[f'ISNUMBER(SEARCH("{needle}",$F3))'],
-                fill=PatternFill("solid", bgColor=colour)))
+    last_c = None
+    if carry_forward:
+        ws_c, last_c = _sheet(wb, "Carry Forward", C_HDR, C_W,
+            rows_from(content.get("carry_forward", []), C_KEYS), {3},
+            "Open items from earlier meetings, reconciled against what was said this time. This is what stops items quietly disappearing.",
+            "पिछली बैठकों के लंबित विषय, इस बार की चर्चा से मिलान करके। इसी से विषय चुपचाप ग़ायब होने से बचते हैं।")
+        dvc = DataValidation(type="list", formula1='"' + ",".join(CARRY_STATUSES) + '"', allow_blank=True)
+        ws_c.add_data_validation(dvc)
+        dvc.add("F3:F200")
+        if last_c >= 3:
+            for needle, colour in (("Still open", AMBER), ("Closed", GREEN)):
+                ws_c.conditional_formatting.add(f"F3:F{last_c}", FormulaRule(
+                    formula=[f'ISNUMBER(SEARCH("{needle}",$F3))'],
+                    fill=PatternFill("solid", bgColor=colour)))
 
     # ---- How to Use ----
     ws = wb.create_sheet("How to Use")
@@ -445,6 +454,8 @@ def build(content, out_path, language="bilingual"):
         ws.row_dimensions[r].height = 18
         r += 1
         for a, b, cc in items:
+            if not carry_forward and a in ("Carry Forward", "Next meeting"):
+                continue
             x = _put(ws, r, 2, a)
             x.font = Font(name=EN, bold=True, size=10)
             x.fill = PatternFill("solid", fgColor=BAND)
@@ -461,7 +472,7 @@ def build(content, out_path, language="bilingual"):
     os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
     wb.save(out_path)
     return {"actions": last_a - 2, "decisions": last_d - 2, "questions": last_q - 2,
-            "risks": last_r - 2, "carry_forward": last_c - 2}
+            "risks": last_r - 2, "carry_forward": None if last_c is None else last_c - 2}
 
 
 def main():
@@ -472,6 +483,9 @@ def main():
                     help="bilingual (default) or english. English-only hides the Hindi columns. "
                          "Overrides a \"language\" key in the content JSON.")
     ap.add_argument("--no-recalc", action="store_true", help="skip the LibreOffice recalculation")
+    ap.add_argument("--no-carry-forward", action="store_true",
+                    help="leave out the Carry Forward sheet, its Summary count and its How to Use "
+                         "entries - for a report that stands alone")
     a = ap.parse_args()
 
     try:
@@ -489,9 +503,10 @@ def main():
     language = a.language or content.get("language") or "bilingual"
     if language not in ("bilingual", "english"):
         sys.exit(f"Unknown language {language!r}. Use 'bilingual' or 'english'.")
-    counts = build(content, out, language)
+    counts = build(content, out, language, carry_forward=not a.no_carry_forward)
     status = "SKIPPED - --no-recalc" if a.no_recalc else recalc(out)
     print(json.dumps({"output": out, "language": language, "rows": counts,
+                      "carry_forward_sheet": not a.no_carry_forward,
                       "recalc": status}, indent=2))
     if status.startswith("SKIPPED") and not a.no_recalc:
         print(f"\nWARNING: {status}", file=sys.stderr)

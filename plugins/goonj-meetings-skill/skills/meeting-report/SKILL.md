@@ -146,6 +146,12 @@ See Step 7.
 
 ## Step 7 — Carry forward
 
+**If the user says they do not want carry-forward** — "no carry forward", "earlier notes are not
+relevant", "this report stands alone" — skip this whole step, leave `carry_forward` out of the
+content JSON, and build with `--no-carry-forward`. That drops the sheet together with its Summary
+count and its How to Use entries, so nothing in the workbook points at a sheet that is not there.
+Do not delete the sheet from a built workbook by hand: the Summary formula would break. Otherwise:
+
 ```bash
 python3 <skill-dir>/scripts/prior_open_items.py "<transcript folder>" "<Workstream>" --before <YYYY-MM-DD>
 ```
@@ -183,7 +189,7 @@ whole How to Use sheet. You supply content only:
 ```bash
 python3 <skill-dir>/scripts/build_report.py content.json \
   --out "<folder>/Meeting_Report_<Workstream>_<YYYY-MM-DD>.xlsx" \
-  --language english|bilingual
+  --language english|bilingual [--no-carry-forward]
 ```
 
 `--language` may be omitted if the JSON carries a `language` key; the flag wins if both are
