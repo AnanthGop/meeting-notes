@@ -1,7 +1,7 @@
 {
   "name": "goonj-meetings-skill",
   "description": "Shared Goonj workflows for Claude. Includes the bilingual meeting-report skill that turns a call transcript into a tracked Excel report.",
-  "version": "1.3.5",
+  "version": "1.4.0",
   "author": {
     "name": "Goonj — Technology"
   },

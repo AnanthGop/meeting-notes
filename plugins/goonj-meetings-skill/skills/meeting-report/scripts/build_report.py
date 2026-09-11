@@ -175,17 +175,6 @@ R_W = [5, 46, 46, 22, 56, 56, 11, 26, 46, 44]
 R_KEYS = ["sr", "en", "hi", "category", "exposure_en", "exposure_hi", "severity",
           "owner", "mitigation", "evidence"]
 
-C_HDR = [("Sr", "क्र."), ("Item carried forward", "पिछला लंबित विषय"),
-         ("Item (Hindi)", "विषय (हिन्दी)"), ("Owner", "ज़िम्मेदार"),
-         ("First raised", "पहली बार कब उठा"), ("Status this meeting", "इस बैठक में स्थिति"),
-         ("Note", "टिप्पणी"), ("Evidence from transcript", "ट्रांसक्रिप्ट से प्रमाण")]
-C_W = [5, 54, 54, 24, 30, 24, 60, 52]
-C_KEYS = ["sr", "en", "hi", "owner", "first_raised", "status", "note", "evidence"]
-
-# The fixed vocabulary for Carry Forward "Status this meeting". verify_report.py rejects
-# anything else, because the Summary count below matches on these exact words.
-CARRY_STATUSES = ["Closed", "Still open", "Still open - restated", "Superseded", "Not mentioned"]
-
 # Columns carrying Hindi CONTENT, per sheet. When language is "english" these are hidden
 # rather than removed: the Summary formulas address columns by letter, so dropping any would
 # silently break every count. Evidence is always the LAST column of a sheet for the same
@@ -196,7 +185,6 @@ HINDI_COLS = {
     "Decisions": ["C", "H"],
     "Open Questions": ["C", "F"],
     "Risks and Compliance": ["C", "F"],
-    "Carry Forward": ["C"],
     "How to Use": ["D"],
 }
 
@@ -216,11 +204,6 @@ STATS = [
     ("Decisions deferred / टाले गए निर्णय", "=COUNTIF(Decisions!D3:D200,\"Deferred*\")"),
     ("Open questions / खुले प्रश्न", "=COUNTIF('Open Questions'!H3:H200,\"Open\")"),
     ("High severity risks / उच्च जोखिम", "=COUNTIF('Risks and Compliance'!G3:G200,\"High\")"),
-    # "Not mentioned" items are still open — nobody closed them — so they stay in the headline
-    # count rather than quietly dropping out of it.
-    ("Items carried forward still open / पुराने लंबित विषय",
-     "=COUNTIF('Carry Forward'!F3:F200,\"Still open*\")"
-     "+COUNTIF('Carry Forward'!F3:F200,\"Not mentioned\")"),
 ]
 
 HOWTO = [
@@ -234,9 +217,7 @@ HOWTO = [
    ("Open Questions", "Unresolved questions, each with a named person who owes an answer.",
     "अनुत्तरित प्रश्न, हर एक के साथ उत्तर देने वाले का नाम।"),
    ("Risks and Compliance", "Control gaps and data exposure, written in business terms.",
-    "नियंत्रण की कमियाँ और डेटा जोखिम, व्यावसायिक भाषा में।"),
-   ("Carry Forward", "Open items from earlier meetings and where each one now stands.",
-    "पिछली बैठकों के लंबित विषय और उनकी वर्तमान स्थिति।")]),
+    "नियंत्रण की कमियाँ और डेटा जोखिम, व्यावसायिक भाषा में।")]),
  ("Column meanings", "स्तंभों का अर्थ", [
    ("Due basis — Explicit", "A date or deadline was actually stated on the call.",
     "कॉल पर तिथि या समय-सीमा स्पष्ट रूप से कही गई।"),
@@ -259,10 +240,8 @@ HOWTO = [
     "Status, Priority और Confidence ड्रॉपडाउन हैं। Status बदलने पर सारांश की गिनती स्वतः बदलेगी।"),
    ("Before circulating", "Check every row marked Medium or Low confidence. Transcripts mishear names and merge speakers.",
     "Medium या Low विश्वसनीयता वाली हर पंक्ति जाँचें। ट्रांसक्रिप्ट नाम ग़लत सुनते हैं और वक्ताओं को मिला देते हैं।"),
-   ("Next meeting", "The next report for this workstream carries every item still Open into its Carry Forward sheet.",
-    "इस कार्यधारा की अगली रिपोर्ट हर लंबित विषय को अपनी Carry Forward शीट में ले जाएगी।"),
-   ("Do not renumber", "Sr numbers are the reference across meetings. Never renumber existing rows.",
-    "क्रम संख्याएँ बैठकों के बीच संदर्भ हैं। मौजूदा पंक्तियों को दोबारा क्रमांकित न करें।")]),
+   ("Do not renumber", "Sr numbers are how rows are referred to. Never renumber existing rows.",
+    "क्रम संख्याएँ पंक्तियों का संदर्भ हैं। मौजूदा पंक्तियों को दोबारा क्रमांकित न करें।")]),
 ]
 
 
@@ -271,9 +250,7 @@ def rows_from(items, keys):
     return [tuple("" if it.get(k) is None else it.get(k, "") for k in keys) for it in items]
 
 
-def build(content, out_path, language="bilingual", carry_forward=True):
-    """carry_forward=False leaves out the Carry Forward sheet together with its Summary count
-    and its How to Use entries, so nothing in the workbook points at a sheet that is not there."""
+def build(content, out_path, language="bilingual"):
     english_only = language == "english"
     m = content.get("meeting", {})
     wb = Workbook()
@@ -304,9 +281,6 @@ def build(content, out_path, language="bilingual", carry_forward=True):
             ("Source transcript / स्रोत", m.get("source", "")),
             ("Report language / रिपोर्ट की भाषा",
              "English only" if english_only else "English + Hindi / अंग्रेज़ी + हिन्दी")]
-    if not carry_forward:
-        meta.append(("Carry forward / पिछले लंबित विषय",
-                     "Not included — this report stands alone / शामिल नहीं — यह रिपोर्ट स्वतंत्र है"))
     r = 6
     for k, v in meta:
         a = ws.cell(row=r, column=2, value=k)
@@ -327,8 +301,6 @@ def build(content, out_path, language="bilingual", carry_forward=True):
     ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=4)
     r += 1
     for k, f in STATS:
-        if not carry_forward and "Carry Forward" in f:
-            continue
         a = ws.cell(row=r, column=2, value=k)
         a.font = Font(name=HI, size=10)
         a.fill = PatternFill("solid", fgColor=LIGHT)
@@ -421,22 +393,6 @@ def build(content, out_path, language="bilingual", carry_forward=True):
         ws_r.conditional_formatting.add(f"G3:G{last_r}", CellIsRule(operator="equal",
             formula=['"Medium"'], fill=PatternFill("solid", bgColor=AMBER)))
 
-    # ---- Carry Forward ----
-    last_c = None
-    if carry_forward:
-        ws_c, last_c = _sheet(wb, "Carry Forward", C_HDR, C_W,
-            rows_from(content.get("carry_forward", []), C_KEYS), {3},
-            "Open items from earlier meetings, reconciled against what was said this time. This is what stops items quietly disappearing.",
-            "पिछली बैठकों के लंबित विषय, इस बार की चर्चा से मिलान करके। इसी से विषय चुपचाप ग़ायब होने से बचते हैं।")
-        dvc = DataValidation(type="list", formula1='"' + ",".join(CARRY_STATUSES) + '"', allow_blank=True)
-        ws_c.add_data_validation(dvc)
-        dvc.add("F3:F200")
-        if last_c >= 3:
-            for needle, colour in (("Still open", AMBER), ("Closed", GREEN)):
-                ws_c.conditional_formatting.add(f"F3:F{last_c}", FormulaRule(
-                    formula=[f'ISNUMBER(SEARCH("{needle}",$F3))'],
-                    fill=PatternFill("solid", bgColor=colour)))
-
     # ---- How to Use ----
     ws = wb.create_sheet("How to Use")
     ws.sheet_view.showGridLines = False
@@ -454,8 +410,6 @@ def build(content, out_path, language="bilingual", carry_forward=True):
         ws.row_dimensions[r].height = 18
         r += 1
         for a, b, cc in items:
-            if not carry_forward and a in ("Carry Forward", "Next meeting"):
-                continue
             x = _put(ws, r, 2, a)
             x.font = Font(name=EN, bold=True, size=10)
             x.fill = PatternFill("solid", fgColor=BAND)
@@ -472,7 +426,7 @@ def build(content, out_path, language="bilingual", carry_forward=True):
     os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
     wb.save(out_path)
     return {"actions": last_a - 2, "decisions": last_d - 2, "questions": last_q - 2,
-            "risks": last_r - 2, "carry_forward": None if last_c is None else last_c - 2}
+            "risks": last_r - 2}
 
 
 def main():
@@ -483,9 +437,6 @@ def main():
                     help="bilingual (default) or english. English-only hides the Hindi columns. "
                          "Overrides a \"language\" key in the content JSON.")
     ap.add_argument("--no-recalc", action="store_true", help="skip the LibreOffice recalculation")
-    ap.add_argument("--no-carry-forward", action="store_true",
-                    help="leave out the Carry Forward sheet, its Summary count and its How to Use "
-                         "entries - for a report that stands alone")
     a = ap.parse_args()
 
     try:
@@ -503,10 +454,9 @@ def main():
     language = a.language or content.get("language") or "bilingual"
     if language not in ("bilingual", "english"):
         sys.exit(f"Unknown language {language!r}. Use 'bilingual' or 'english'.")
-    counts = build(content, out, language, carry_forward=not a.no_carry_forward)
+    counts = build(content, out, language)
     status = "SKIPPED - --no-recalc" if a.no_recalc else recalc(out)
     print(json.dumps({"output": out, "language": language, "rows": counts,
-                      "carry_forward_sheet": not a.no_carry_forward,
                       "recalc": status}, indent=2))
     if status.startswith("SKIPPED") and not a.no_recalc:
         print(f"\nWARNING: {status}", file=sys.stderr)

@@ -34,8 +34,7 @@ these constantly.
 
 ## Workstreams
 
-Each is a folder under the transcripts root. The folder name is the workstream, and it
-drives carry-forward between meetings.
+Each is a folder under the transcripts root. The folder name is the workstream.
 
 `Workstream A` · `Workstream B` · `Workstream C`
 

@@ -12,21 +12,17 @@ Runs every check at once instead of one shell call per row:
      recalculated the file; otherwise reported as "not recalculated")
   4. the content rules SKILL.md states are actually met: every decision is Decided
      or Deferred, a deferred decision names who it waits on, an open question names
-     who answers it, dropdown columns hold only their allowed values, and every
-     carry-forward row carries a recognised status
+     who answers it, and dropdown columns hold only their allowed values
   5. lists Medium/Low confidence rows a human must confirm before circulating
 
 Exit 0 = clean.  Exit 1 = something needs fixing.
 """
-import json, os, re, sys, unicodedata
+import json, re, sys, unicodedata
 
 try:
     import openpyxl
 except ImportError:
     sys.exit("openpyxl is not installed.  Fix:  pip install openpyxl")
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_report import CARRY_STATUSES  # single source of truth for the vocabulary
 
 MIN_FRAGMENT = 12          # shorter fragments match by chance; not worth checking
 ELLIPSIS = re.compile(r"\.\.\.|…")
@@ -34,8 +30,7 @@ QUOTED = re.compile(r'"([^"]+)"')
 CAVEAT = re.compile(r"\[[^\]]*\]\s*$")
 
 EVIDENCE = "Evidence from transcript"
-EVIDENCE_SHEETS = ["Action Items", "Decisions", "Open Questions", "Risks and Compliance",
-                   "Carry Forward"]
+EVIDENCE_SHEETS = ["Action Items", "Decisions", "Open Questions", "Risks and Compliance"]
 
 # Allowed values per (sheet, English header). Mirrors the dropdowns build_report.py writes;
 # a value outside the list is a silent miscount in the Summary, not a cosmetic slip.
@@ -46,7 +41,6 @@ ALLOWED = {
     ("Action Items", "Confidence"): ["High", "Medium", "Low"],
     ("Open Questions", "Status"): ["Open", "Answered", "Escalated", "Dropped"],
     ("Risks and Compliance", "Severity"): ["High", "Medium", "Low"],
-    ("Carry Forward", "Status this meeting"): CARRY_STATUSES,
 }
 
 
@@ -107,8 +101,8 @@ def rows_of(wb, sheet):
 
 def recount(sheets):
     """Recompute every Summary stat the way its formula does. Keys are the English labels."""
-    A, D, Q, R, C = (sheets[n] for n in ("Action Items", "Decisions", "Open Questions",
-                                          "Risks and Compliance", "Carry Forward"))
+    A, D, Q, R = (sheets[n] for n in ("Action Items", "Decisions", "Open Questions",
+                                       "Risks and Compliance"))
     eq = lambda v, t: s(v).lower() == t.lower()
     sw = lambda v, t: s(v).lower().startswith(t.lower())
     return {
@@ -121,9 +115,6 @@ def recount(sheets):
         "Decisions deferred": sum(1 for r in D if sw(r.get("Decided / Deferred"), "Deferred")),
         "Open questions": sum(1 for r in Q if eq(r.get("Status"), "Open")),
         "High severity risks": sum(1 for r in R if eq(r.get("Severity"), "High")),
-        "Items carried forward still open": sum(
-            1 for r in C if sw(r.get("Status this meeting"), "Still open")
-            or eq(r.get("Status this meeting"), "Not mentioned")),
     }
 
 
@@ -176,13 +167,8 @@ def main():
     for sheet in EVIDENCE_SHEETS:
         for row in sheets[sheet]:
             cell = s(row.get(EVIDENCE))
-            # Carry Forward only has new transcript words to quote when something was said
-            # about the item; SKILL.md requires the quote for a Closed.
-            required = (sheet != "Carry Forward"
-                        or s(row.get("Status this meeting")).lower().startswith("closed"))
             if not cell:
-                if required:
-                    no_evidence.append({**ref(sheet, row), "reason": "Evidence cell is empty"})
+                no_evidence.append({**ref(sheet, row), "reason": "Evidence cell is empty"})
                 continue
             frags = fragments(cell)
             if not frags:

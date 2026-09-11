@@ -4,8 +4,7 @@ Shared Claude skills for Goonj teams, distributed as a plugin.
 
 Currently one skill: **meeting-report** — turns a meeting transcript into a bilingual
 English/Hindi Excel report with key points, action items (owner, due date, priority),
-decisions taken versus deferred, open questions, risks, and open items carried forward
-from the previous meeting in the same workstream.
+decisions taken versus deferred, open questions and risks.
 
 ---
 
@@ -136,8 +135,8 @@ you do not need to create one.
 
 > Make a meeting report from the 3 September Leadership transcript
 
-**Terminal:** start Claude Code *in the transcripts folder*, so it can see the transcript, the
-glossary and earlier reports:
+**Terminal:** start Claude Code *in the transcripts folder*, so it can see the transcript and the
+glossary:
 
 ```bash
 cd "/path/to/Meeting Transcripts/Leadership"
@@ -200,11 +199,10 @@ The workbook is written next to the transcript as
 | Decisions | What was settled, and separately what was deferred and who it waits on |
 | Open Questions | Unresolved questions, each with a named person who owes an answer |
 | Risks and Compliance | Control gaps and exposure, written in business terms |
-| Carry Forward | Open items from earlier meetings and where each now stands. Say "no carry forward" and the sheet is left out — the report then stands alone |
 | How to Use | Bilingual legend for every column and status value |
 
 Status, Priority and Confidence are dropdowns. Changing a Status updates the Summary
-counts automatically, so the workbook works as a live tracker between meetings.
+counts automatically, so the workbook works as a live tracker after the meeting.
 
 ## Two things to know before circulating a report
 
@@ -216,12 +214,11 @@ counts automatically, so the workbook works as a live tracker between meetings.
 
 ## For maintainers — how the skill is structured
 
-The skill ships four scripts, and the agent is told not to write spreadsheet code itself:
+The skill ships three scripts, and the agent is told not to write spreadsheet code itself:
 
 | File | Role |
 |---|---|
 | `scripts/to_text.py` | Converts the transcript (`.rtf`, `.docx`, `.txt`, `.vtt`) to plain UTF-8 text. Uses LibreOffice where installed, falls back to the built-in `textutil` on macOS, and strips `.vtt` cue timestamps itself. |
-| `scripts/prior_open_items.py` | Reads the previous report in the workstream and lists every item still open — open actions, open questions, deferred decisions, unresolved carry-forwards — with the `first_raised` reference the new Carry Forward sheet must keep. |
 | `scripts/build_report.py` | Takes a JSON of extracted content, writes the formatted workbook, recalculates it. Owns every colour, header, formula, dropdown and the whole How to Use sheet. `--language english` hides the Hindi columns; it never removes them, because the Summary formulas address columns by letter. |
 | `scripts/verify_report.py` | One pass over the finished workbook: every Evidence quote checked against the transcript and no row without one, formula errors scanned, Summary counts recounted, the content rules enforced (deferred decisions name who they wait on, questions name who answers, dropdown columns hold only their allowed words), low-confidence rows listed. |
 

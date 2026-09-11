@@ -173,37 +173,5 @@
       "mitigation": "Use only photos on the consent list (Action 5).",
       "evidence": "\"Then we don't use the ones we never asked about.\""
     }
-  ],
-  "carry_forward": [
-    {
-      "sr": 1,
-      "en": "Send the donor list (was promised for Monday).",
-      "hi": "दाता सूची भेजना (सोमवार तक भेजने का वादा था)।",
-      "owner": "Ravi Nair",
-      "first_raised": "2026-08-13 · Action 2",
-      "status": "Still open - restated",
-      "note": "Re-committed as Action 1 of this meeting with an explicit time.",
-      "evidence": "\"Last week we said the donor list would go out by Monday, and I have not seen it.\""
-    },
-    {
-      "sr": 2,
-      "en": "Laptop for the new field coordinator.",
-      "hi": "नई फ़ील्ड समन्वयक के लिए लैपटॉप।",
-      "owner": "Dev Kapoor",
-      "first_raised": "2026-08-13 · Action 5",
-      "status": "Closed",
-      "note": "Delivered.",
-      "evidence": "\"Yes, delivered on Monday, she has it.\""
-    },
-    {
-      "sr": 3,
-      "en": "Update the volunteer induction deck.",
-      "hi": "स्वयंसेवक प्रशिक्षण प्रस्तुति का अद्यतन।",
-      "owner": "Meera Joshi",
-      "first_raised": "2026-08-06 · Action 1",
-      "status": "Not mentioned",
-      "note": "Did not come up this meeting.",
-      "evidence": ""
-    }
   ]
 }

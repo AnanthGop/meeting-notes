@@ -1,6 +1,6 @@
 ---
 name: meeting-report
-description: Turn a meeting transcript into a bilingual (English/Hindi) Excel meeting report — key points, action items with owner and due date, decisions taken vs deferred, open questions, risks, and open items carried forward from the previous meeting in the same workstream. Use for meeting minutes, summaries, action items, or "what did we decide" questions about a recorded call.
+description: Turn a meeting transcript into a bilingual (English/Hindi) Excel meeting report — key points, action items with owner and due date, decisions taken vs deferred, open questions and risks. Use for meeting minutes, summaries, action items, or "what did we decide" questions about a recorded call.
 ---
 
 # Meeting report
@@ -92,7 +92,7 @@ The title and participant list are frequently wrong or incomplete — the partic
 
 ## Step 4 — Establish meeting identity
 
-- **Workstream** = the parent folder name. It drives carry-forward, so get it right. The glossary lists the valid workstreams.
+- **Workstream** = the parent folder name. The glossary lists the valid workstreams.
 - **Date** = the `Date:` header, resolved to a full year from the file's modification time.
 - **Meeting type** — the glossary maps workstreams to archetypes. Each shifts the emphasis:
   - *Leadership / strategy* — Decisions and Open Questions carry the weight; actions are few and soft-dated.
@@ -117,7 +117,7 @@ When the transcript is genuinely unreadable at a point that matters, say so in t
 
 ## Step 6 — Extract into the content JSON
 
-Write ONE JSON file (schema in Step 8) holding six sets. Each free-text field needs an English and a Hindi version — write natural Hindi, not machine translation, and keep proper nouns and system names in Latin script inside the Hindi text.
+Write ONE JSON file (schema in Step 7) holding five sets. Each free-text field needs an English and a Hindi version — write natural Hindi, not machine translation, and keep proper nouns and system names in Latin script inside the Hindi text.
 
 ### Key points (8–12)
 What someone who missed the call must know. Substance only — no "the team discussed X". Include disagreements and reversals: when a leader overrides a framing, that is a key point.
@@ -141,46 +141,7 @@ Control gaps, data-privacy exposure, financial-control weaknesses, audit issues,
 
 Where the glossary records a threshold or rule as unconfirmed, never state a figure heard in a transcript as settled — log it as an Open Question.
 
-### Carry forward
-See Step 7.
-
-## Step 7 — Carry forward
-
-**If the user says they do not want carry-forward** — "no carry forward", "earlier notes are not
-relevant", "this report stands alone" — skip this whole step, leave `carry_forward` out of the
-content JSON, and build with `--no-carry-forward`. That drops the sheet together with its Summary
-count and its How to Use entries, so nothing in the workbook points at a sheet that is not there.
-Do not delete the sheet from a built workbook by hand: the Summary formula would break. Otherwise:
-
-```bash
-python3 <skill-dir>/scripts/prior_open_items.py "<transcript folder>" "<Workstream>" --before <YYYY-MM-DD>
-```
-
-It finds the newest earlier `Meeting_Report_<Workstream>_*.xlsx` (same folder, or the workstream
-folder) and prints every item still open in it: Action Items `Open`/`In Progress`, Open Questions
-`Open`/`Escalated`, `Deferred` decisions, and its own Carry Forward rows still `Still open*` or
-`Not mentioned`. `--before` is this meeting's date, so a re-run never reads its own report.
-Do not write spreadsheet code to read the prior workbook.
-
-- Carry across **every item the script lists**, not just the last meeting's — the newest report
-  is then always the complete open-items picture, with no separate master file to keep in sync.
-  A prior report's own open items and its carried items are both in the list.
-- Reconcile each against what was said this time: `Closed` · `Still open` · `Still open - restated`
-  · `Superseded` · `Not mentioned` — exactly these words; the column is a dropdown and the
-  Summary counts on them. Quote the evidence for a `Closed`.
-- Only mark `Closed` on clear evidence. `Not mentioned` is the honest call when the item simply
-  did not come up — never quietly drop it. It still counts as open in the Summary.
-- Also catch carry-forward items **admitted inside this transcript** — someone conceding they
-  never sent a promised note or list is a carry-forward row even with no prior report on disk.
-- **`first_raised` is the cross-meeting reference.** Copy it from the script's output verbatim —
-  `2026-08-13 · Action 2`, `2026-08-06 · Question 1`. For an item admitted in this transcript
-  with no prior report, write the meeting it was promised in if that is stated, else this
-  meeting's date. **Never renumber** and never re-derive it from the new report's own rows.
-
-If no prior report exists the script says so; still create the sheet and note that this is the
-first in the chain.
-
-## Step 8 — Build the workbook
+## Step 7 — Build the workbook
 
 **Do not write openpyxl code.** The plugin ships `scripts/build_report.py`, which owns every
 column header, colour, row height, dropdown, conditional-format rule, Summary formula and the
@@ -189,7 +150,7 @@ whole How to Use sheet. You supply content only:
 ```bash
 python3 <skill-dir>/scripts/build_report.py content.json \
   --out "<folder>/Meeting_Report_<Workstream>_<YYYY-MM-DD>.xlsx" \
-  --language english|bilingual [--no-carry-forward]
+  --language english|bilingual
 ```
 
 `--language` may be omitted if the JSON carries a `language` key; the flag wins if both are
@@ -233,22 +194,16 @@ left blank, and `key_points` entries hold one element instead of two.
   "risks": [{
     "sr": 1, "en": "", "hi": "", "category": "", "exposure_en": "", "exposure_hi": "",
     "severity": "High|Medium|Low", "owner": "", "mitigation": "", "evidence": ""
-  }],
-  "carry_forward": [{
-    "sr": 1, "en": "", "hi": "", "owner": "", "first_raised": "2026-08-13 · Action 2",
-    "status": "Closed|Still open|Still open - restated|Superseded|Not mentioned",
-    "note": "", "evidence": ""
   }]
 }
 ```
 
 `type` may carry a qualifier — `Decided (clarification)` — and the Summary formulas use wildcards
 so those still count. Keep the qualifier after the base word. Every other dropdown column
-(`due_basis`, `priority`, `status`, `confidence`, `severity`, carry-forward `status`) takes exactly
+(`due_basis`, `priority`, `status`, `confidence`, `severity`) takes exactly
 the listed words; anything else is a silent miscount, and `verify_report.py` rejects it.
 
-`evidence` is required on every row of every sheet, with one exception: a carry-forward row whose
-status is not `Closed` may leave it empty (nothing new was said). `raised_in` is where in this
+`evidence` is required on every row of every sheet. `raised_in` is where in this
 meeting the question came up — an agenda item or topic, not a date. `source` is the transcript
 file name.
 
@@ -256,7 +211,7 @@ A complete worked example — fictional organisation, fictional names — is in
 `reference/example-content.json` with its transcript `reference/example-transcript.txt`; the pair
 builds and verifies clean, so it is also the smoke test after any script change.
 
-## Step 9 — Verify
+## Step 8 — Verify
 
 One command, not one shell call per row:
 
@@ -279,9 +234,9 @@ not count, so quote enough of the turn.
 
 Re-run until it passes. `needs_human_confirmation`, `caveat_only_evidence` (rows whose only
 evidence is an `[unreadable]` note) and `warnings` are not failures; they are what you flag to the
-reader in Step 10.
+reader in Step 9.
 
-## Step 10 — Deliver
+## Step 9 — Deliver
 
 The workbook is written straight into the user's folder, so it is already delivered. Tell them the folder and file name, and lead with what the meeting actually produced — how many actions and who holds the high-priority ones, what was decided against what was deferred, and anything High severity. Name the rows that need human confirmation before the report is circulated, including any whose only evidence is an `[unreadable]` note.
 
