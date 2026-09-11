@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Build a bilingual meeting-report workbook from extracted content.
 
-    python3 build_report.py content.json [--out FILE] [--no-recalc]
+    python3 build_report.py content.json [--out FILE] [--language english|bilingual] [--no-recalc]
 
 The agent supplies content only. Every column header, colour, formula, dropdown
 and the whole How to Use sheet live here, so they are neither regenerated nor
 re-derived on each run. See SKILL.md for the JSON schema.
 """
 import argparse, json, os, platform, shutil, subprocess, sys, tempfile
+from pathlib import Path
 
 try:
     from openpyxl import Workbook
@@ -49,6 +50,17 @@ def find_soffice():
     return None
 
 
+def soffice_run(exe, args, tmp, timeout=180):
+    """Run LibreOffice headless with a throwaway profile inside `tmp`.
+
+    Without its own profile a headless run hands the request to any LibreOffice window the
+    user has open, which then silently produces nothing. Raises on failure or timeout.
+    """
+    profile = Path(tmp, "profile").resolve().as_uri()
+    subprocess.run([exe, f"-env:UserInstallation={profile}", "--headless", "--norestore", *args],
+                   check=True, capture_output=True, timeout=timeout)
+
+
 def recalc(path):
     """Recalculate in place so formulas carry cached values. Returns a status string."""
     exe = find_soffice()
@@ -60,9 +72,7 @@ def recalc(path):
         src = os.path.join(tmp, "in.xlsx")
         shutil.copy(path, src)
         try:
-            subprocess.run([exe, "--headless", "--norestore", "--convert-to", "xlsx",
-                            "--outdir", os.path.join(tmp, "out"), src],
-                           check=True, capture_output=True, timeout=180)
+            soffice_run(exe, ["--convert-to", "xlsx", "--outdir", os.path.join(tmp, "out"), src], tmp)
         except subprocess.TimeoutExpired:
             return "SKIPPED - LibreOffice timed out after 180s."
         except subprocess.CalledProcessError as e:
@@ -151,9 +161,10 @@ Q_HDR = [("Sr", "क्र."), ("Open question", "खुला प्रश्�
          ("Open question (Hindi)", "खुला प्रश्न (हिन्दी)"),
          ("Must be answered by", "किसे उत्तर देना है"),
          ("What it blocks / impact", "क्या रुका है / प्रभाव"),
-         ("Impact (Hindi)", "प्रभाव (हिन्दी)"), ("Raised in", "कहाँ उठा"), ("Status", "स्थिति")]
-Q_W = [5, 52, 52, 30, 52, 52, 24, 12]
-Q_KEYS = ["sr", "en", "hi", "answer_by", "impact_en", "impact_hi", "raised_in", "status"]
+         ("Impact (Hindi)", "प्रभाव (हिन्दी)"), ("Raised in", "कहाँ उठा"), ("Status", "स्थिति"),
+         ("Evidence from transcript", "ट्रांसक्रिप्ट से प्रमाण")]
+Q_W = [5, 52, 52, 30, 52, 52, 24, 12, 52]
+Q_KEYS = ["sr", "en", "hi", "answer_by", "impact_en", "impact_hi", "raised_in", "status", "evidence"]
 
 R_HDR = [("Sr", "क्र."), ("Risk / flag", "जोखिम"), ("Risk (Hindi)", "जोखिम (हिन्दी)"),
          ("Category", "श्रेणी"), ("Exposure in business terms", "व्यावसायिक प्रभाव"),
@@ -167,13 +178,18 @@ R_KEYS = ["sr", "en", "hi", "category", "exposure_en", "exposure_hi", "severity"
 C_HDR = [("Sr", "क्र."), ("Item carried forward", "पिछला लंबित विषय"),
          ("Item (Hindi)", "विषय (हिन्दी)"), ("Owner", "ज़िम्मेदार"),
          ("First raised", "पहली बार कब उठा"), ("Status this meeting", "इस बैठक में स्थिति"),
-         ("Note", "टिप्पणी")]
-C_W = [5, 54, 54, 24, 30, 24, 60]
-C_KEYS = ["sr", "en", "hi", "owner", "first_raised", "status", "note"]
+         ("Note", "टिप्पणी"), ("Evidence from transcript", "ट्रांसक्रिप्ट से प्रमाण")]
+C_W = [5, 54, 54, 24, 30, 24, 60, 52]
+C_KEYS = ["sr", "en", "hi", "owner", "first_raised", "status", "note", "evidence"]
+
+# The fixed vocabulary for Carry Forward "Status this meeting". verify_report.py rejects
+# anything else, because the Summary count below matches on these exact words.
+CARRY_STATUSES = ["Closed", "Still open", "Still open - restated", "Superseded", "Not mentioned"]
 
 # Columns carrying Hindi CONTENT, per sheet. When language is "english" these are hidden
 # rather than removed: the Summary formulas address columns by letter, so dropping any would
-# silently break every count.
+# silently break every count. Evidence is always the LAST column of a sheet for the same
+# reason — appending never moves a letter the formulas depend on.
 HINDI_COLS = {
     "Summary": ["D"],
     "Action Items": ["C"],
@@ -200,8 +216,11 @@ STATS = [
     ("Decisions deferred / टाले गए निर्णय", "=COUNTIF(Decisions!D3:D200,\"Deferred*\")"),
     ("Open questions / खुले प्रश्न", "=COUNTIF('Open Questions'!H3:H200,\"Open\")"),
     ("High severity risks / उच्च जोखिम", "=COUNTIF('Risks and Compliance'!G3:G200,\"High\")"),
+    # "Not mentioned" items are still open — nobody closed them — so they stay in the headline
+    # count rather than quietly dropping out of it.
     ("Items carried forward still open / पुराने लंबित विषय",
-     "=COUNTIF('Carry Forward'!F3:F200,\"Still open*\")"),
+     "=COUNTIF('Carry Forward'!F3:F200,\"Still open*\")"
+     "+COUNTIF('Carry Forward'!F3:F200,\"Not mentioned\")"),
 ]
 
 HOWTO = [
@@ -321,6 +340,8 @@ def build(content, out_path, language="bilingual"):
     ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=4)
     r += 1
     for i, kp in enumerate(content.get("key_points", []), 1):
+        if isinstance(kp, str):          # English-only runs often write a bare string
+            kp = [kp]
         e, h = (kp + ["", ""])[:2] if isinstance(kp, list) else (kp.get("en", ""), kp.get("hi", ""))
         _put(ws, r, 2, i).alignment = Alignment(horizontal="center", vertical="top")
         _put(ws, r, 3, e)
@@ -398,6 +419,9 @@ def build(content, out_path, language="bilingual"):
         rows_from(content.get("carry_forward", []), C_KEYS), {3},
         "Open items from earlier meetings, reconciled against what was said this time. This is what stops items quietly disappearing.",
         "पिछली बैठकों के लंबित विषय, इस बार की चर्चा से मिलान करके। इसी से विषय चुपचाप ग़ायब होने से बचते हैं।")
+    dvc = DataValidation(type="list", formula1='"' + ",".join(CARRY_STATUSES) + '"', allow_blank=True)
+    ws_c.add_data_validation(dvc)
+    dvc.add("F3:F200")
     if last_c >= 3:
         for needle, colour in (("Still open", AMBER), ("Closed", GREEN)):
             ws_c.conditional_formatting.add(f"F3:F{last_c}", FormulaRule(

@@ -59,10 +59,15 @@ If there is no glossary, say so once, work from the transcript alone, mark name-
 ## Step 3 — Convert the transcript
 
 ```bash
-libreoffice --headless --convert-to txt:Text --outdir <tmp> "<file>.rtf"
+python3 <skill-dir>/scripts/to_text.py "<file>.rtf" --outdir <tmp>
 ```
 
-`pandoc` does **not** read these RTFs — do not reach for it. Work in a scratch directory outside the user's folders; write only the finished workbook into their folder.
+`<skill-dir>` is the folder holding this SKILL.md — `scripts/` and `reference/` live beside it,
+**not** in the transcript folder, so always use the absolute path. The script handles `.rtf`,
+`.docx`, `.txt` and `.vtt` (cue timestamps stripped), uses LibreOffice where it is installed and
+falls back to macOS `textutil` where it is not, and prints the `.txt` path plus its line count.
+`pandoc` does **not** read these RTFs — do not reach for it. Work in a scratch directory outside
+the user's folders; write only the finished workbook into their folder.
 
 Transcripts typically open with a header block:
 
@@ -90,6 +95,9 @@ The title and participant list are frequently wrong or incomplete — the partic
 
 These are machine transcripts of multilingual calls. Specifically:
 
+- **Read to the last line.** `to_text.py` prints the line count; the file reader stops at
+  2,000 lines, so a long call needs reading in offsets until the end. The commitments are at
+  the end — stopping early is the one way to miss them all.
 - **`Me:` is whoever recorded the call.** Not a name. Resolve it from the glossary or the surrounding context.
 - **`Them:` and `Speaker A:` are not one person.** A single such block routinely contains three people talking in turn. Never attribute an action to `Them` — read the surrounding turns to work out who actually spoke, and mark Confidence `Medium` or `Low` when you cannot.
 - **Names garble badly.** Normalise silently against the glossary's variant table. A name that is not in the glossary and not clearly spelled is a `Medium` confidence row, and worth flagging so someone can add it.
@@ -118,7 +126,7 @@ One row per commitment. Columns: `Sr` · `Action` · `Action (Hindi)` · `Owner`
 One row per decision, with `Decided / Deferred` in its own column. A deferred decision must name **who it now waits on** — that column is the whole point of separating the two. Record the rationale where it was given; a decision without its reasoning gets relitigated next meeting.
 
 ### Open questions
-Only questions with a **named person who owes an answer**. For each, state what it blocks in concrete terms. A question with no owner is escalated in the report, not silently listed.
+Only questions with a **named person who owes an answer**. For each, state what it blocks in concrete terms, and quote the transcript words that raised it. A question with no owner is escalated in the report, not silently listed — `verify_report.py` rejects the row.
 
 ### Risks and compliance
 Control gaps, data-privacy exposure, financial-control weaknesses, audit issues, reporting-integrity problems. Write **Exposure in business terms** — this is the column leadership reads, so no system vocabulary. The pattern that distinguishes a control failure from a bug is "…and nothing reports it". Severity: High / Medium / Low.
@@ -130,15 +138,33 @@ See Step 7.
 
 ## Step 7 — Carry forward
 
-Find the most recent `Meeting_Report_<Workstream>_*.xlsx` in the same folder, or in the workstream folder.
+```bash
+python3 <skill-dir>/scripts/prior_open_items.py "<transcript folder>" "<Workstream>" --before <YYYY-MM-DD>
+```
 
-- Carry across **every item still Open from the whole chain**, not just the last meeting — the newest report is then always the complete open-items picture, with no separate master file to keep in sync.
-- Reconcile each against what was said this time: `Closed` · `Still open` · `Still open - restated` · `Superseded` · `Not mentioned`. Cite the evidence for a `Closed`.
-- Only mark `Closed` on clear evidence. `Not mentioned` is the honest call when the item simply did not come up — never quietly drop it.
-- Also catch carry-forward items **admitted inside this transcript** — someone conceding they never sent a promised note or list is a carry-forward row even with no prior report on disk.
-- Preserve the original `Sr` numbers as the cross-meeting reference. **Never renumber.**
+It finds the newest earlier `Meeting_Report_<Workstream>_*.xlsx` (same folder, or the workstream
+folder) and prints every item still open in it: Action Items `Open`/`In Progress`, Open Questions
+`Open`/`Escalated`, `Deferred` decisions, and its own Carry Forward rows still `Still open*` or
+`Not mentioned`. `--before` is this meeting's date, so a re-run never reads its own report.
+Do not write spreadsheet code to read the prior workbook.
 
-If no prior report exists, still create the sheet and note that this is the first in the chain.
+- Carry across **every item the script lists**, not just the last meeting's — the newest report
+  is then always the complete open-items picture, with no separate master file to keep in sync.
+  A prior report's own open items and its carried items are both in the list.
+- Reconcile each against what was said this time: `Closed` · `Still open` · `Still open - restated`
+  · `Superseded` · `Not mentioned` — exactly these words; the column is a dropdown and the
+  Summary counts on them. Quote the evidence for a `Closed`.
+- Only mark `Closed` on clear evidence. `Not mentioned` is the honest call when the item simply
+  did not come up — never quietly drop it. It still counts as open in the Summary.
+- Also catch carry-forward items **admitted inside this transcript** — someone conceding they
+  never sent a promised note or list is a carry-forward row even with no prior report on disk.
+- **`first_raised` is the cross-meeting reference.** Copy it from the script's output verbatim —
+  `2026-08-13 · Action 2`, `2026-08-06 · Question 1`. For an item admitted in this transcript
+  with no prior report, write the meeting it was promised in if that is stated, else this
+  meeting's date. **Never renumber** and never re-derive it from the new report's own rows.
+
+If no prior report exists the script says so; still create the sheet and note that this is the
+first in the chain.
 
 ## Step 8 — Build the workbook
 
@@ -147,7 +173,7 @@ column header, colour, row height, dropdown, conditional-format rule, Summary fo
 whole How to Use sheet. You supply content only:
 
 ```bash
-python3 scripts/build_report.py content.json \
+python3 <skill-dir>/scripts/build_report.py content.json \
   --out "<folder>/Meeting_Report_<Workstream>_<YYYY-MM-DD>.xlsx" \
   --language english|bilingual
 ```
@@ -188,43 +214,62 @@ left blank, and `key_points` entries hold one element instead of two.
   }],
   "questions": [{
     "sr": 1, "en": "", "hi": "", "answer_by": "",
-    "impact_en": "", "impact_hi": "", "raised_in": "", "status": "Open"
+    "impact_en": "", "impact_hi": "", "raised_in": "", "status": "Open", "evidence": ""
   }],
   "risks": [{
     "sr": 1, "en": "", "hi": "", "category": "", "exposure_en": "", "exposure_hi": "",
     "severity": "High|Medium|Low", "owner": "", "mitigation": "", "evidence": ""
   }],
   "carry_forward": [{
-    "sr": 1, "en": "", "hi": "", "owner": "", "first_raised": "", "status": "", "note": ""
+    "sr": 1, "en": "", "hi": "", "owner": "", "first_raised": "2026-08-13 · Action 2",
+    "status": "Closed|Still open|Still open - restated|Superseded|Not mentioned",
+    "note": "", "evidence": ""
   }]
 }
 ```
 
-`type` may carry a qualifier — `Decided (clarification)`, `Still open - restated` — and the
-Summary formulas use wildcards so those still count. Keep the qualifier after the base word.
+`type` may carry a qualifier — `Decided (clarification)` — and the Summary formulas use wildcards
+so those still count. Keep the qualifier after the base word. Every other dropdown column
+(`due_basis`, `priority`, `status`, `confidence`, `severity`, carry-forward `status`) takes exactly
+the listed words; anything else is a silent miscount, and `verify_report.py` rejects it.
+
+`evidence` is required on every row of every sheet, with one exception: a carry-forward row whose
+status is not `Closed` may leave it empty (nothing new was said). `raised_in` is where in this
+meeting the question came up — an agenda item or topic, not a date. `source` is the transcript
+file name.
+
+A complete worked example — fictional organisation, fictional names — is in
+`reference/example-content.json` with its transcript `reference/example-transcript.txt`; the pair
+builds and verifies clean, so it is also the smoke test after any script change.
 
 ## Step 9 — Verify
 
 One command, not one shell call per row:
 
 ```bash
-python3 scripts/verify_report.py "<the .xlsx>" "<the converted transcript .txt>"
+python3 <skill-dir>/scripts/verify_report.py "<the .xlsx>" "<the converted transcript .txt>"
 ```
 
-It checks every Evidence quote against the transcript, scans all sheets for formula errors,
-tests that the decided/deferred counts add up, and lists the Medium and Low confidence rows.
-Exit 0 is clean; exit 1 means fix something.
+It checks every Evidence quote against the transcript and that no row is missing one, scans all
+sheets for formula errors, recounts every Summary figure from the sheets (when LibreOffice has
+recalculated the file), enforces the content rules above — every decision Decided or Deferred, a
+deferred decision names who it waits on, an open question names who answers, dropdown columns hold
+only their allowed words — and lists the Medium and Low confidence rows. Exit 0 is clean; exit 1
+means fix something.
 
 **A quote failure means your reading drifted — correct the row, never soften the quote.** The
 commonest causes are dropping a stutter or filler word, and normalising a mis-transcribed name
-or acronym inside the quotation marks.
+or acronym inside the quotation marks. **A `rows_with_no_evidence` entry means the row has no
+transcript words behind it — quote them or drop the row**; a fragment under 12 characters does
+not count, so quote enough of the turn.
 
-Re-run until it passes. Rows listed under `needs_human_confirmation` are not failures; they are
-what you flag to the reader in Step 10.
+Re-run until it passes. `needs_human_confirmation`, `caveat_only_evidence` (rows whose only
+evidence is an `[unreadable]` note) and `warnings` are not failures; they are what you flag to the
+reader in Step 10.
 
 ## Step 10 — Deliver
 
-The workbook is written straight into the user's folder, so it is already delivered. Tell them the folder and file name, and lead with what the meeting actually produced — how many actions and who holds the high-priority ones, what was decided against what was deferred, and anything High severity. Name the rows that need human confirmation before the report is circulated.
+The workbook is written straight into the user's folder, so it is already delivered. Tell them the folder and file name, and lead with what the meeting actually produced — how many actions and who holds the high-priority ones, what was decided against what was deferred, and anything High severity. Name the rows that need human confirmation before the report is circulated, including any whose only evidence is an `[unreadable]` note.
 
 Do not restate the workbook's contents at length; they can open it.
 

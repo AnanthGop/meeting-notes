@@ -16,13 +16,13 @@ the free tier.
 
 1. Open the **Claude desktop app**. If you are in Cowork, open the **Cowork** tab first.
 2. In the left sidebar, open **Customize**, then the **Plugins** tab.
-3. Choose **Add from a repository** and paste this repository's URL.
+3. Choose **Add from a repository** and paste `https://github.com/AnanthGop/meeting-notes`.
 4. Install the **goonj-meetings-skill** plugin.
 
 Command line, if you prefer:
 
 ```bash
-/plugin marketplace add <owner>/<repo>
+/plugin marketplace add AnanthGop/meeting-notes
 /plugin install goonj-meetings-skill@goonj-skills
 ```
 
@@ -99,21 +99,32 @@ counts automatically, so the workbook works as a live tracker between meetings.
 
 ## For maintainers — how the skill is structured
 
-The skill ships two scripts, and the agent is told not to write spreadsheet code itself:
+The skill ships four scripts, and the agent is told not to write spreadsheet code itself:
 
 | File | Role |
 |---|---|
+| `scripts/to_text.py` | Converts the transcript (`.rtf`, `.docx`, `.txt`, `.vtt`) to plain UTF-8 text. Uses LibreOffice where installed, falls back to the built-in `textutil` on macOS, and strips `.vtt` cue timestamps itself. |
+| `scripts/prior_open_items.py` | Reads the previous report in the workstream and lists every item still open — open actions, open questions, deferred decisions, unresolved carry-forwards — with the `first_raised` reference the new Carry Forward sheet must keep. |
 | `scripts/build_report.py` | Takes a JSON of extracted content, writes the formatted workbook, recalculates it. Owns every colour, header, formula, dropdown and the whole How to Use sheet. `--language english` hides the Hindi columns; it never removes them, because the Summary formulas address columns by letter. |
-| `scripts/verify_report.py` | One pass over the finished workbook: every Evidence quote checked against the transcript, formula errors scanned, counts reconciled, low-confidence rows listed. |
+| `scripts/verify_report.py` | One pass over the finished workbook: every Evidence quote checked against the transcript and no row without one, formula errors scanned, Summary counts recounted, the content rules enforced (deferred decisions name who they wait on, questions name who answers, dropdown columns hold only their allowed words), low-confidence rows listed. |
 
 This keeps report formatting identical across every meeting and every person, and stops the
 agent re-deriving the same layout on each run. Change a colour or add a column **in the script**,
-not in `SKILL.md`.
+not in `SKILL.md`. Evidence is always the last column of a sheet, so adding one never moves a
+letter the Summary formulas depend on.
 
-Both scripts need `openpyxl` (`pip install openpyxl`). `build_report.py` finds LibreOffice on
+`reference/example-content.json` and `reference/example-transcript.txt` are a fictional worked
+example. They build and verify clean, so after any script change run:
+
+```bash
+python3 plugins/goonj-meetings-skill/skills/meeting-report/scripts/build_report.py plugins/goonj-meetings-skill/skills/meeting-report/reference/example-content.json --out /tmp/example.xlsx --no-recalc && python3 plugins/goonj-meetings-skill/skills/meeting-report/scripts/verify_report.py /tmp/example.xlsx plugins/goonj-meetings-skill/skills/meeting-report/reference/example-transcript.txt
+```
+
+All scripts need `openpyxl` (`pip install openpyxl`). `build_report.py` finds LibreOffice on
 Linux, macOS and Windows; if it is not installed the workbook is still correct — Excel
 recalculates on open — but `verify_report.py` cannot check the counts. Set `SOFFICE=/path/to/soffice`
-to point at a non-standard install.
+to point at a non-standard install. On a Mac without LibreOffice, transcripts still convert
+through `textutil`.
 
 ## Maintainers
 

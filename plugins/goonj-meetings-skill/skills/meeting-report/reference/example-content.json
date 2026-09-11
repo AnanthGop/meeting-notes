@@ -1,0 +1,209 @@
+{
+  "language": "bilingual",
+  "meeting": {
+    "title_en": "Weekly Sync — Udaan Trust programme team (fictional example)",
+    "title_hi": "साप्ताहिक बैठक — उड़ान ट्रस्ट कार्यक्रम टीम (काल्पनिक उदाहरण)",
+    "workstream": "Example",
+    "type": "Operational / working session",
+    "date": "20 August 2026",
+    "date_iso": "2026-08-20",
+    "participants": "Asha Verma (recorder), Ravi Nair, Meera Joshi, Dev Kapoor",
+    "recorded_by": "Asha Verma",
+    "source": "example-transcript.txt"
+  },
+  "key_points": [
+    [
+      "The donor list promised for Monday has still not gone out; Ravi committed to send it before 10:00 on 21 August.",
+      "सोमवार तक भेजने का वादा की गई दाता सूची अभी तक नहीं गई; रवि ने 21 अगस्त सुबह 10 बजे से पहले भेजने की प्रतिबद्धता दी।"
+    ],
+    [
+      "DPDP consent text is with legal (two-week turnaround); the final wording must land before the September campaign, and Dev then updates the donation form.",
+      "DPDP सहमति पाठ लीगल के पास है (दो सप्ताह); अंतिम शब्दावली सितंबर अभियान से पहले आनी चाहिए, उसके बाद देव दान फ़ॉर्म अपडेट करेंगे।"
+    ],
+    [
+      "A ₹42,000 cash payment to the transport vendor went through with no PO and nothing in the system flagged it — a control failure, not a one-off.",
+      "परिवहन वेंडर को ₹42,000 का नकद भुगतान बिना PO के हुआ और सिस्टम ने कुछ नहीं पकड़ा — यह नियंत्रण की विफलता है, एक बार की चूक नहीं।"
+    ],
+    [
+      "Decided, and closed to further debate: from 1 September no cash payment above ₹10,000 without a PO. Capping the field imprest was deferred until finance confirms the actual ceiling.",
+      "तय हुआ, और आगे बहस नहीं: 1 सितंबर से ₹10,000 से ऊपर कोई नकद भुगतान बिना PO के नहीं। फ़ील्ड इम्प्रेस्ट पर सीमा का निर्णय फ़ाइनेंस से वास्तविक सीमा की पुष्टि तक टला।"
+    ],
+    [
+      "Annual-report photos: only those with family consent will be used; Ravi will list which ones qualify before the report goes to print.",
+      "वार्षिक रिपोर्ट के फ़ोटो: केवल वही इस्तेमाल होंगे जिन पर परिवारों की सहमति है; रवि छपने से पहले सूची बनाएँगे।"
+    ]
+  ],
+  "actions": [
+    {
+      "sr": 1,
+      "en": "Send the donor list (promised last week for Monday).",
+      "hi": "दाता सूची भेजें (पिछले सप्ताह सोमवार के लिए वादा था)।",
+      "owner": "Ravi Nair",
+      "raised_by": "Asha Verma",
+      "due": "21 Aug 2026, before 10:00",
+      "due_basis": "Explicit",
+      "priority": "High",
+      "status": "Open",
+      "confidence": "Medium",
+      "evidence": "\"I did not send the donor list, sorry, it got stuck with the address cleanup. I will send it tomorrow morning, before ten.\" [spoken in a Them: block; Ravi inferred from Asha addressing him about the list]"
+    },
+    {
+      "sr": 2,
+      "en": "Bring back the final DPDP consent text from legal.",
+      "hi": "लीगल से DPDP सहमति पाठ का अंतिम रूप लेकर आएँ।",
+      "owner": "Meera Joshi",
+      "raised_by": "Asha Verma",
+      "due": "Before the September campaign starts",
+      "due_basis": "Relational",
+      "priority": "High",
+      "status": "Open",
+      "confidence": "High",
+      "evidence": "\"So the draft is done, I shared it with legal on Friday. They said two weeks. So we should have the final consent text before the September campaign starts.\""
+    },
+    {
+      "sr": 3,
+      "en": "Put the final consent text into the donation form once legal has signed it off.",
+      "hi": "लीगल की अंतिम शब्दावली मिलने पर दान फ़ॉर्म में सहमति पाठ जोड़ें।",
+      "owner": "Dev Kapoor",
+      "raised_by": "Asha Verma",
+      "due": "Once legal sends the final wording",
+      "due_basis": "Conditional",
+      "priority": "Medium",
+      "status": "Open",
+      "confidence": "High",
+      "evidence": "\"I can do that, but only once legal sends the final wording, uh, I cannot start before that.\" / \"Fine, Dev takes the form change, conditional on legal.\""
+    },
+    {
+      "sr": 4,
+      "en": "Find out from finance what the field imprest ceiling actually is.",
+      "hi": "फ़ाइनेंस से फ़ील्ड इम्प्रेस्ट की वास्तविक सीमा पता करें।",
+      "owner": "Meera Joshi",
+      "raised_by": "Asha Verma",
+      "due": "",
+      "due_basis": "None",
+      "priority": "Medium",
+      "status": "Open",
+      "confidence": "High",
+      "evidence": "\"Yes, I will ask finance.\""
+    },
+    {
+      "sr": 5,
+      "en": "List which annual-report photos have family consent; only those will be used.",
+      "hi": "वार्षिक रिपोर्ट के लिए किन फ़ोटो पर परिवारों की सहमति है, उसकी सूची बनाएँ; केवल वही इस्तेमाल होंगे।",
+      "owner": "Ravi Nair",
+      "raised_by": "Asha Verma",
+      "due": "Before the annual report goes to print",
+      "due_basis": "Relational",
+      "priority": "Medium",
+      "status": "Open",
+      "confidence": "High",
+      "evidence": "\"Ravi, please make the list of which photos have consent ... before the report goes to print.\" / \"Okay. I- I will do the list.\""
+    }
+  ],
+  "decisions": [
+    {
+      "sr": 1,
+      "en": "From 1 September, no cash payment above ₹10,000 without a purchase order.",
+      "hi": "1 सितंबर से ₹10,000 से ऊपर कोई नकद भुगतान बिना PO के नहीं होगा।",
+      "type": "Decided",
+      "by": "Asha Verma",
+      "pending_on": "",
+      "rationale_en": "Cash payments without a PO enter the system as ordinary expenses and nothing flags the missing approval; the issue had already been discussed twice.",
+      "rationale_hi": "बिना PO के नकद भुगतान सिस्टम में सामान्य ख़र्च की तरह दर्ज होते हैं और छूटी हुई मंज़ूरी को कोई नहीं पकड़ता; यह मुद्दा पहले दो बार उठ चुका था।",
+      "evidence": "\"from the first of September no cash payment above ten thousand without a PO. That is final, I am not opening this again, we discussed it twice.\""
+    },
+    {
+      "sr": 2,
+      "en": "Whether to cap the field imprest.",
+      "hi": "फ़ील्ड इम्प्रेस्ट पर सीमा लगाई जाए या नहीं।",
+      "type": "Deferred",
+      "by": "Asha Verma",
+      "pending_on": "Meera Joshi — finance to confirm the current ceiling",
+      "rationale_en": "Nobody on the call knew the actual ceiling.",
+      "rationale_hi": "कॉल पर किसी को वास्तविक सीमा पता नहीं थी।",
+      "evidence": "\"Let's not decide that today. I want Meera to check with finance what the imprest ceiling actually is and then we decide.\""
+    }
+  ],
+  "questions": [
+    {
+      "sr": 1,
+      "en": "What is the current field imprest ceiling — ₹15,000 or ₹20,000?",
+      "hi": "फ़ील्ड इम्प्रेस्ट की मौजूदा सीमा क्या है — ₹15,000 या ₹20,000?",
+      "answer_by": "Meera Joshi",
+      "impact_en": "Blocks the decision on capping the imprest. The figures heard on the call are unconfirmed and must not be reported as settled.",
+      "impact_hi": "इम्प्रेस्ट सीमा तय करने का निर्णय रुका है। कॉल पर सुनी गई राशियाँ अपुष्ट हैं और उन्हें तय मानकर रिपोर्ट नहीं किया जा सकता।",
+      "raised_in": "Vendor payment discussion",
+      "status": "Open",
+      "evidence": "\"I don't know if the ceiling is fifteen or twenty thousand, you know, different people say different things.\""
+    },
+    {
+      "sr": 2,
+      "en": "Which annual-report photos have consent from the families shown?",
+      "hi": "वार्षिक रिपोर्ट के किन फ़ोटो पर दिखाए गए परिवारों की सहमति है?",
+      "answer_by": "Ravi Nair",
+      "impact_en": "Blocks photo selection for the annual report; photos without consent cannot be used.",
+      "impact_hi": "वार्षिक रिपोर्ट के लिए फ़ोटो का चयन रुका है; बिना सहमति के फ़ोटो इस्तेमाल नहीं हो सकते।",
+      "raised_in": "Annual report photos",
+      "status": "Open",
+      "evidence": "\"Honestly I am not sure. Some yes, some we never asked.\""
+    }
+  ],
+  "risks": [
+    {
+      "sr": 1,
+      "en": "Cash vendor payments bypass approval and nothing reports it.",
+      "hi": "नकद वेंडर भुगतान मंज़ूरी को दरकिनार करते हैं और कोई रिपोर्ट नहीं होती।",
+      "category": "Financial control",
+      "exposure_en": "Field spend can leave the organisation with no approval trail; an auditor would see unapproved cash expenses with no way to tell them from approved ones.",
+      "exposure_hi": "फ़ील्ड का ख़र्च बिना किसी मंज़ूरी के रिकॉर्ड के रह सकता है; ऑडिट में बिना मंज़ूरी वाले नकद ख़र्च मंज़ूर ख़र्च से अलग नहीं पहचाने जा सकेंगे।",
+      "severity": "High",
+      "owner": "Ravi Nair",
+      "mitigation": "PO rule from 1 September (Decision 1); check whether the system can flag cash expenses that have no PO.",
+      "evidence": "\"Forty two thousand, cash, no PO. And the thing is, nothing in the system flags it.\""
+    },
+    {
+      "sr": 2,
+      "en": "Family photos used without consent.",
+      "hi": "परिवारों के फ़ोटो बिना सहमति के इस्तेमाल।",
+      "category": "Data privacy / consent",
+      "exposure_en": "Publishing a family's photo without permission exposes the organisation to complaints and reputational harm, and cannot be undone once printed.",
+      "exposure_hi": "बिना अनुमति किसी परिवार का फ़ोटो छापने से शिकायत और प्रतिष्ठा को नुक़सान हो सकता है, और छपने के बाद इसे वापस नहीं लिया जा सकता।",
+      "severity": "Medium",
+      "owner": "Ravi Nair",
+      "mitigation": "Use only photos on the consent list (Action 5).",
+      "evidence": "\"Then we don't use the ones we never asked about.\""
+    }
+  ],
+  "carry_forward": [
+    {
+      "sr": 1,
+      "en": "Send the donor list (was promised for Monday).",
+      "hi": "दाता सूची भेजना (सोमवार तक भेजने का वादा था)।",
+      "owner": "Ravi Nair",
+      "first_raised": "2026-08-13 · Action 2",
+      "status": "Still open - restated",
+      "note": "Re-committed as Action 1 of this meeting with an explicit time.",
+      "evidence": "\"Last week we said the donor list would go out by Monday, and I have not seen it.\""
+    },
+    {
+      "sr": 2,
+      "en": "Laptop for the new field coordinator.",
+      "hi": "नई फ़ील्ड समन्वयक के लिए लैपटॉप।",
+      "owner": "Dev Kapoor",
+      "first_raised": "2026-08-13 · Action 5",
+      "status": "Closed",
+      "note": "Delivered.",
+      "evidence": "\"Yes, delivered on Monday, she has it.\""
+    },
+    {
+      "sr": 3,
+      "en": "Update the volunteer induction deck.",
+      "hi": "स्वयंसेवक प्रशिक्षण प्रस्तुति का अद्यतन।",
+      "owner": "Meera Joshi",
+      "first_raised": "2026-08-06 · Action 1",
+      "status": "Not mentioned",
+      "note": "Did not come up this meeting.",
+      "evidence": ""
+    }
+  ]
+}
