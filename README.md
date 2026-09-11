@@ -12,28 +12,63 @@ from the previous meeting in the same workstream.
 ## What the computer needs
 
 Claude runs this plugin's scripts on the computer where it is running — nothing is sent to a
-server by the scripts, and nothing comes bundled. So that computer needs, once:
+server by the scripts, and nothing comes bundled. So that computer needs, once: **Python 3**
+(3.9 or newer), the **openpyxl** library, and on Windows or Linux **LibreOffice**. Copy the
+commands for your system.
 
-1. **Python 3** (3.9 or newer).
-   - **Mac:** open Terminal, type `python3` and press Return. If it is not installed, macOS
-     offers to install Apple's Command Line Tools, which include it. Accept and wait.
-   - **Windows:** install from [python.org](https://www.python.org/downloads/) and tick
-     **"Add python.exe to PATH"** in the installer.
-2. **The openpyxl library** (writes the Excel file). In Terminal or Command Prompt:
+### Mac
 
-   ```bash
-   python3 -m pip install openpyxl
-   ```
+Open **Terminal** and run these two lines. If Python is missing, the first one offers to install
+Apple's Command Line Tools — accept and wait, then run it again.
 
-3. **LibreOffice** ([libreoffice.org](https://www.libreoffice.org/download/), free) —
-   **optional on a Mac**, where transcripts convert with the built-in `textutil` and Excel
-   computes the Summary counts when the file is opened. **Needed on Windows and Linux** if your
-   transcripts arrive as `.rtf` or `.docx`; `.txt` and `.vtt` transcripts need nothing extra.
+```bash
+python3 --version
+```
 
-To check the computer is ready, paste this and look for the word `ready`:
+```bash
+python3 -m pip install openpyxl
+```
+
+LibreOffice is **optional on a Mac**: transcripts convert with the built-in `textutil`, and Excel
+computes the Summary counts when the file is opened. Install it only if you want the counts
+verified before the report is delivered — [libreoffice.org](https://www.libreoffice.org/download/),
+or `brew install --cask libreoffice` if you use Homebrew.
+
+### Windows
+
+Open **Terminal** (right-click the Start button → *Terminal*) and run these three lines. `winget`
+is built into Windows 10 and 11. **LibreOffice is needed here** — Windows has no built-in
+converter for `.rtf` / `.docx` transcripts.
+
+```powershell
+winget install --id Python.Python.3.12 -e
+```
+
+```powershell
+winget install --id TheDocumentFoundation.LibreOffice -e
+```
+
+**Close and reopen Terminal** so it picks up the new installs, then:
+
+```powershell
+py -m pip install openpyxl
+```
+
+On Windows the Python command is **`py`** (or `python`), not `python3` — the skill knows this,
+so you need not tell it.
+
+### Check it worked
+
+Paste this and look for the word `ready` — Mac:
 
 ```bash
 python3 -c "import openpyxl; print('ready')"
+```
+
+Windows:
+
+```powershell
+py -c "import openpyxl; print('ready')"
 ```
 
 If something is missing when a report is requested, the skill stops and says exactly what to
