@@ -20,7 +20,35 @@ A meeting transcript (`.rtf`, `.txt`, `.docx`, `.vtt`) and a request for minutes
 5. **Evidence is verbatim — including the errors.** Copy the transcript's exact words. Keep the stutters (`you- you`), the filler (`you know`, `uh`), and the mis-transcribed terms: if the transcript says `DPTP`, the Evidence cell says `DPTP` even though the report body says DPDP. Normalising inside a quote defeats the point of having one, and `verify_report.py` will reject it. Use `...` to elide a middle section — each fragment either side is checked separately. Any caveat of your own goes in square brackets at the end, which is not checked.
 6. **Write the content JSON in one file write, and build with one command.** Never assemble either incrementally across several edits — each round trip costs more wall-clock than the thinking did.
 
-## Step 1 — Load the glossary
+## Step 1 — Ask whether they want Hindi
+
+**Ask before doing anything else**, so nobody waits through a transcript read to be asked a
+question. Offer exactly two options:
+
+- **English only** — the default choice, and noticeably faster
+- **English + Hindi** — both, as paired columns
+
+Use the session's question tool if there is one; otherwise ask in plain text and wait.
+
+Three rules:
+
+- **Ask once per run, not once per transcript.** If the request covers several meetings, one
+  answer applies to all of them.
+- **Do not ask if the request already answers it** — "make the report, English only", or
+  "हिन्दी में भी चाहिए". Take them at their word and proceed.
+- **If nobody can answer** (a scheduled or batch run), build English only and say so in the
+  delivery, so the reader knows Hindi was skipped rather than lost.
+
+Record the answer as `"language": "english"` or `"language": "bilingual"` at the top level of
+the content JSON.
+
+**If they choose English only, write no Hindi at all.** Omit `hi`, `rationale_hi`, `impact_hi`
+and `exposure_hi` entirely, and make each `key_points` entry a single-element list. Do not
+translate "just in case" and do not write empty Hindi strings — the whole saving is in not
+generating it. The Hindi columns still exist in the workbook but are hidden, so the same file
+can be filled in later without rebuilding.
+
+## Step 2 — Load the glossary
 
 Look for `meeting-report-glossary.md` in the transcript's folder, its parent, or its grandparent. It holds everything organisation-specific: canonical names of people and how transcripts mangle them, term and acronym variants, the workstream list, meeting archetypes, domain object codes and process order, approval thresholds, and recurring events that function as deadlines.
 
@@ -28,7 +56,7 @@ Look for `meeting-report-glossary.md` in the transcript's folder, its parent, or
 
 If there is no glossary, say so once, work from the transcript alone, mark name-dependent rows `Medium` confidence, and offer to start a glossary from what you inferred. `reference/glossary-template.md` in this skill is the structure to follow — never treat its placeholder examples as real.
 
-## Step 2 — Convert the transcript
+## Step 3 — Convert the transcript
 
 ```bash
 libreoffice --headless --convert-to txt:Text --outdir <tmp> "<file>.rtf"
@@ -49,7 +77,7 @@ Transcript:
 
 The title and participant list are frequently wrong or incomplete — the participant line often names only the recorder while five people speak. Rebuild both from the body.
 
-## Step 3 — Establish meeting identity
+## Step 4 — Establish meeting identity
 
 - **Workstream** = the parent folder name. It drives carry-forward, so get it right. The glossary lists the valid workstreams.
 - **Date** = the `Date:` header, resolved to a full year from the file's modification time.
@@ -58,7 +86,7 @@ The title and participant list are frequently wrong or incomplete — the partic
   - *Operational / working session* — Action Items carry the weight, one row per screen or object, listed in the process order given in the glossary.
   - *Discovery / induction* — mostly Key Points and Open Questions. Expect few real actions and do not manufacture them.
 
-## Step 4 — Read the transcript, knowing how it lies
+## Step 5 — Read the transcript, knowing how it lies
 
 These are machine transcripts of multilingual calls. Specifically:
 
@@ -71,9 +99,9 @@ These are machine transcripts of multilingual calls. Specifically:
 
 When the transcript is genuinely unreadable at a point that matters, say so in the Evidence cell in square brackets rather than smoothing it over.
 
-## Step 5 — Extract into the content JSON
+## Step 6 — Extract into the content JSON
 
-Write ONE JSON file (schema in Step 7) holding six sets. Each free-text field needs an English and a Hindi version — write natural Hindi, not machine translation, and keep proper nouns and system names in Latin script inside the Hindi text.
+Write ONE JSON file (schema in Step 8) holding six sets. Each free-text field needs an English and a Hindi version — write natural Hindi, not machine translation, and keep proper nouns and system names in Latin script inside the Hindi text.
 
 ### Key points (8–12)
 What someone who missed the call must know. Substance only — no "the team discussed X". Include disagreements and reversals: when a leader overrides a framing, that is a key point.
@@ -98,9 +126,9 @@ Control gaps, data-privacy exposure, financial-control weaknesses, audit issues,
 Where the glossary records a threshold or rule as unconfirmed, never state a figure heard in a transcript as settled — log it as an Open Question.
 
 ### Carry forward
-See Step 6.
+See Step 7.
 
-## Step 6 — Carry forward
+## Step 7 — Carry forward
 
 Find the most recent `Meeting_Report_<Workstream>_*.xlsx` in the same folder, or in the workstream folder.
 
@@ -112,15 +140,21 @@ Find the most recent `Meeting_Report_<Workstream>_*.xlsx` in the same folder, or
 
 If no prior report exists, still create the sheet and note that this is the first in the chain.
 
-## Step 7 — Build the workbook
+## Step 8 — Build the workbook
 
 **Do not write openpyxl code.** The plugin ships `scripts/build_report.py`, which owns every
 column header, colour, row height, dropdown, conditional-format rule, Summary formula and the
 whole How to Use sheet. You supply content only:
 
 ```bash
-python3 scripts/build_report.py content.json --out "<folder>/Meeting_Report_<Workstream>_<YYYY-MM-DD>.xlsx"
+python3 scripts/build_report.py content.json \
+  --out "<folder>/Meeting_Report_<Workstream>_<YYYY-MM-DD>.xlsx" \
+  --language english|bilingual
 ```
+
+`--language` may be omitted if the JSON carries a `language` key; the flag wins if both are
+given. English-only hides the Hindi columns rather than removing them, because the Summary
+formulas address columns by letter and dropping one would silently break every count.
 
 It builds the workbook, recalculates it through LibreOffice (resolving the binary on Linux,
 macOS and Windows), and prints the row counts and recalc status as JSON. If LibreOffice is
@@ -130,10 +164,12 @@ open; only automated verification of the counts is unavailable.
 ### content.json schema
 
 Every field is a string unless noted. Omit a key and it renders empty; never invent a value to
-fill one.
+fill one. When `language` is `english`, the `_hi` fields below are omitted entirely rather than
+left blank, and `key_points` entries hold one element instead of two.
 
 ```json
 {
+  "language": "english|bilingual",
   "meeting": {
     "title_en": "", "title_hi": "", "workstream": "", "type": "",
     "date": "3 September 2026", "date_iso": "2026-09-03",
@@ -167,7 +203,7 @@ fill one.
 `type` may carry a qualifier — `Decided (clarification)`, `Still open - restated` — and the
 Summary formulas use wildcards so those still count. Keep the qualifier after the base word.
 
-## Step 8 — Verify
+## Step 9 — Verify
 
 One command, not one shell call per row:
 
@@ -184,9 +220,9 @@ commonest causes are dropping a stutter or filler word, and normalising a mis-tr
 or acronym inside the quotation marks.
 
 Re-run until it passes. Rows listed under `needs_human_confirmation` are not failures; they are
-what you flag to the reader in Step 9.
+what you flag to the reader in Step 10.
 
-## Step 9 — Deliver
+## Step 10 — Deliver
 
 The workbook is written straight into the user's folder, so it is already delivered. Tell them the folder and file name, and lead with what the meeting actually produced — how many actions and who holds the high-priority ones, what was decided against what was deferred, and anything High severity. Name the rows that need human confirmation before the report is circulated.
 

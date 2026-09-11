@@ -171,6 +171,25 @@ C_HDR = [("Sr", "क्र."), ("Item carried forward", "पिछला लं�
 C_W = [5, 54, 54, 24, 30, 24, 60]
 C_KEYS = ["sr", "en", "hi", "owner", "first_raised", "status", "note"]
 
+# Columns carrying Hindi CONTENT, per sheet. When language is "english" these are hidden
+# rather than removed: the Summary formulas address columns by letter, so dropping any would
+# silently break every count.
+HINDI_COLS = {
+    "Summary": ["D"],
+    "Action Items": ["C"],
+    "Decisions": ["C", "H"],
+    "Open Questions": ["C", "F"],
+    "Risks and Compliance": ["C", "F"],
+    "Carry Forward": ["C"],
+    "How to Use": ["D"],
+}
+
+
+def hide_hindi(ws):
+    for col in HINDI_COLS.get(ws.title, []):
+        ws.column_dimensions[col].hidden = True
+
+
 STATS = [
     ("Action items — total / कुल कार्य", "=COUNTA('Action Items'!A3:A200)"),
     ("Action items — open / लंबित कार्य", "=COUNTIF('Action Items'!I3:I200,\"Open\")"),
@@ -233,7 +252,8 @@ def rows_from(items, keys):
     return [tuple("" if it.get(k) is None else it.get(k, "") for k in keys) for it in items]
 
 
-def build(content, out_path):
+def build(content, out_path, language="bilingual"):
+    english_only = language == "english"
     m = content.get("meeting", {})
     wb = Workbook()
 
@@ -247,7 +267,10 @@ def build(content, out_path):
     c = ws.cell(row=2, column=2, value="MEETING REPORT / बैठक रिपोर्ट")
     c.font = Font(name=HI, bold=True, size=16, color=NAVY)
     ws.merge_cells(start_row=2, start_column=2, end_row=2, end_column=4)
-    for i, (txt, fnt) in enumerate([(m.get("title_en", ""), EN), (m.get("title_hi", ""), HI)]):
+    titles = [(m.get("title_en", ""), EN)]
+    if not english_only:
+        titles.append((m.get("title_hi", ""), HI))
+    for i, (txt, fnt) in enumerate(titles):
         c = ws.cell(row=3 + i, column=2, value=txt)
         c.font = Font(name=fnt, size=12, color="333333")
         ws.merge_cells(start_row=3 + i, start_column=2, end_row=3 + i, end_column=4)
@@ -257,7 +280,9 @@ def build(content, out_path):
             ("Date / दिनांक", m.get("date", "")),
             ("Participants / प्रतिभागी", m.get("participants", "")),
             ("Recorded by / रिकॉर्ड करने वाले", m.get("recorded_by", "")),
-            ("Source transcript / स्रोत", m.get("source", ""))]
+            ("Source transcript / स्रोत", m.get("source", "")),
+            ("Report language / रिपोर्ट की भाषा",
+             "English only" if english_only else "English + Hindi / अंग्रेज़ी + हिन्दी")]
     r = 6
     for k, v in meta:
         a = ws.cell(row=r, column=2, value=k)
@@ -405,6 +430,10 @@ def build(content, out_path):
             r += 1
         r += 1
 
+    if english_only:
+        for sheet in wb.worksheets:
+            hide_hindi(sheet)
+
     os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
     wb.save(out_path)
     return {"actions": last_a - 2, "decisions": last_d - 2, "questions": last_q - 2,
@@ -415,6 +444,9 @@ def main():
     ap = argparse.ArgumentParser(description="Build a bilingual meeting-report workbook.")
     ap.add_argument("content", help="JSON file of extracted content")
     ap.add_argument("--out", help="output .xlsx (default: beside the JSON, named from the meeting)")
+    ap.add_argument("--language", choices=["bilingual", "english"],
+                    help="bilingual (default) or english. English-only hides the Hindi columns. "
+                         "Overrides a \"language\" key in the content JSON.")
     ap.add_argument("--no-recalc", action="store_true", help="skip the LibreOffice recalculation")
     a = ap.parse_args()
 
@@ -430,9 +462,13 @@ def main():
         out = os.path.join(os.path.dirname(os.path.abspath(a.content)),
                            f"Meeting_Report_{ws_name}_{m.get('date_iso', 'undated')}.xlsx")
 
-    counts = build(content, out)
+    language = a.language or content.get("language") or "bilingual"
+    if language not in ("bilingual", "english"):
+        sys.exit(f"Unknown language {language!r}. Use 'bilingual' or 'english'.")
+    counts = build(content, out, language)
     status = "SKIPPED - --no-recalc" if a.no_recalc else recalc(out)
-    print(json.dumps({"output": out, "rows": counts, "recalc": status}, indent=2))
+    print(json.dumps({"output": out, "language": language, "rows": counts,
+                      "recalc": status}, indent=2))
     if status.startswith("SKIPPED") and not a.no_recalc:
         print(f"\nWARNING: {status}", file=sys.stderr)
 

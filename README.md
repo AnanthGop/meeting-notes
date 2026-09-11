@@ -46,6 +46,12 @@ Connect your transcripts folder, then ask in plain language:
 
 > Make a meeting report from the 3 September Leadership transcript
 
+It asks one question first — **English only, or English + Hindi?** English only is the default
+and is noticeably faster; choose it when the report is for office or leadership readers, and
+choose Hindi when it is going to field teams. Say so in your request ("English only") and it
+will not ask. The Hindi columns exist in the file either way, just hidden when unused, so the
+same workbook can have Hindi added later without rebuilding.
+
 The workbook is written next to the transcript as
 `Meeting_Report_<Workstream>_<YYYY-MM-DD>.xlsx`.
 
@@ -56,6 +62,9 @@ The workbook is written next to the transcript as
 1. Claude डेस्कटॉप ऐप में **Customize → Plugins → Add from a repository** से यह प्लगइन जोड़ें।
 2. अपने ट्रांसक्रिप्ट फ़ोल्डर में `meeting-report-glossary.md` फ़ाइल रखें (टेम्पलेट ऊपर बताए पथ पर है)।
 3. फिर बस इतना कहें: "3 सितंबर की Leadership मीटिंग की रिपोर्ट बना दीजिए"।
+
+पहले एक सवाल पूछा जाएगा — रिपोर्ट **केवल अंग्रेज़ी** में चाहिए या **अंग्रेज़ी + हिन्दी** दोनों में?
+फ़ील्ड टीमों के लिए हिन्दी चुनें। हिन्दी न चुनने पर अनुवाद होगा ही नहीं, और रिपोर्ट तेज़ी से बनेगी।
 
 रिपोर्ट एक Excel फ़ाइल के रूप में उसी फ़ोल्डर में बन जाएगी जिसमें ट्रांसक्रिप्ट है। हर पंक्ति अंग्रेज़ी
 और हिन्दी दोनों में होती है, और हर पंक्ति के साथ ट्रांसक्रिप्ट से प्रमाण दिया जाता है।
@@ -94,7 +103,7 @@ The skill ships two scripts, and the agent is told not to write spreadsheet code
 
 | File | Role |
 |---|---|
-| `scripts/build_report.py` | Takes a JSON of extracted content, writes the formatted workbook, recalculates it. Owns every colour, header, formula, dropdown and the whole How to Use sheet. |
+| `scripts/build_report.py` | Takes a JSON of extracted content, writes the formatted workbook, recalculates it. Owns every colour, header, formula, dropdown and the whole How to Use sheet. `--language english` hides the Hindi columns; it never removes them, because the Summary formulas address columns by letter. |
 | `scripts/verify_report.py` | One pass over the finished workbook: every Evidence quote checked against the transcript, formula errors scanned, counts reconciled, low-confidence rows listed. |
 
 This keeps report formatting identical across every meeting and every person, and stops the
