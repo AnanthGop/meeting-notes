@@ -88,6 +88,24 @@ counts automatically, so the workbook works as a live tracker between meetings.
 2. **`None` in the Due basis column means no timing was agreed on the call.** That is a
    finding, not a formatting gap. Those are the actions that slip.
 
+## For maintainers — how the skill is structured
+
+The skill ships two scripts, and the agent is told not to write spreadsheet code itself:
+
+| File | Role |
+|---|---|
+| `scripts/build_report.py` | Takes a JSON of extracted content, writes the formatted workbook, recalculates it. Owns every colour, header, formula, dropdown and the whole How to Use sheet. |
+| `scripts/verify_report.py` | One pass over the finished workbook: every Evidence quote checked against the transcript, formula errors scanned, counts reconciled, low-confidence rows listed. |
+
+This keeps report formatting identical across every meeting and every person, and stops the
+agent re-deriving the same layout on each run. Change a colour or add a column **in the script**,
+not in `SKILL.md`.
+
+Both scripts need `openpyxl` (`pip install openpyxl`). `build_report.py` finds LibreOffice on
+Linux, macOS and Windows; if it is not installed the workbook is still correct — Excel
+recalculates on open — but `verify_report.py` cannot check the counts. Set `SOFFICE=/path/to/soffice`
+to point at a non-standard install.
+
 ## Maintainers
 
 Bump `version` in `plugins/goonj-meetings-skill/.claude-plugin/plugin.json` on every change — that is what

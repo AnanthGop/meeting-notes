@@ -8,3 +8,6 @@ Meeting_Report_*.xlsx
 Goonj_Meeting_Report_*.xlsx
 
 .DS_Store
+
+__pycache__/
+*.pyc

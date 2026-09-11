@@ -17,6 +17,8 @@ A meeting transcript (`.rtf`, `.txt`, `.docx`, `.vtt`) and a request for minutes
 2. **Every row cites evidence.** If you cannot quote the transcript words behind a row, the row does not go in. No inference presented as fact.
 3. **Never invent a due date.** If no timing was stated, the Due basis is `None`. That is a finding, not a gap to fill.
 4. **Flag what you are unsure of** in the Confidence column rather than guessing. These transcripts merge speakers; a wrong owner reaching a developer or a leader is the main failure mode.
+5. **Evidence is verbatim — including the errors.** Copy the transcript's exact words. Keep the stutters (`you- you`), the filler (`you know`, `uh`), and the mis-transcribed terms: if the transcript says `DPTP`, the Evidence cell says `DPTP` even though the report body says DPDP. Normalising inside a quote defeats the point of having one, and `verify_report.py` will reject it. Use `...` to elide a middle section — each fragment either side is checked separately. Any caveat of your own goes in square brackets at the end, which is not checked.
+6. **Write the content JSON in one file write, and build with one command.** Never assemble either incrementally across several edits — each round trip costs more wall-clock than the thinking did.
 
 ## Step 1 — Load the glossary
 
@@ -69,9 +71,9 @@ These are machine transcripts of multilingual calls. Specifically:
 
 When the transcript is genuinely unreadable at a point that matters, say so in the Evidence cell in square brackets rather than smoothing it over.
 
-## Step 5 — Extract
+## Step 5 — Extract into the content JSON
 
-Build six sets. Each free-text field needs an English and a Hindi version — write natural Hindi, not machine translation, and keep proper nouns and system names in Latin script inside the Hindi text.
+Write ONE JSON file (schema in Step 7) holding six sets. Each free-text field needs an English and a Hindi version — write natural Hindi, not machine translation, and keep proper nouns and system names in Latin script inside the Hindi text.
 
 ### Key points (8–12)
 What someone who missed the call must know. Substance only — no "the team discussed X". Include disagreements and reversals: when a leader overrides a framing, that is a key point.
@@ -112,58 +114,77 @@ If no prior report exists, still create the sheet and note that this is the firs
 
 ## Step 7 — Build the workbook
 
-`Meeting_Report_<Workstream>_<YYYY-MM-DD>.xlsx`, saved beside the transcript. Build with `openpyxl`.
+**Do not write openpyxl code.** The plugin ships `scripts/build_report.py`, which owns every
+column header, colour, row height, dropdown, conditional-format rule, Summary formula and the
+whole How to Use sheet. You supply content only:
 
-**Sheets, in order:** `Summary` · `Action Items` · `Decisions` · `Open Questions` · `Risks and Compliance` · `Carry Forward` · `How to Use`
-
-(Avoid `&` and `/` in sheet names — they complicate cross-sheet formulas.)
-
-**Layout convention for every content sheet:** row 1 a one-line bilingual note on how to use the sheet · row 2 the header · data from row 3. Freeze at `B3`, autofilter the whole table.
-
-**Formatting**
-- Bilingual headers, two lines in one cell: `f"{english}\n{hindi}"`, white bold on navy `1F3864`, wrapped, centred, row height 34.
-- Font `Arial` for English cells, `Nirmala UI` for Hindi cells (Windows renders Devanagari natively, macOS falls back cleanly).
-- Wrap text, top-aligned, thin borders, alternating `F2F2F2` banding.
-- Set explicit row heights from estimated wrapped-line count, clamped to roughly 30–170px. Excel does not reliably auto-fit generated rows.
-
-**Bilingual layout rule:** free text gets *paired columns* (English column then Hindi column) so one item stays one row. Short enum columns (Status, Priority, Confidence, Due basis) stay single English columns with a bilingual legend on the How to Use sheet — bilingual enum values break `COUNTIF`.
-
-**Dropdowns** (`DataValidation`, applied to rows 3–200 so new rows inherit them):
-- Status — `Open,In Progress,Closed,Superseded,Dropped`
-- Priority and Confidence — `High,Medium,Low`
-- Due basis — `Explicit,Relational,Conditional,None`
-
-**Conditional formatting** — `CellIsRule` on Status (Open amber `FFF2CC`, In Progress blue `DEEBF7`, Closed green `E2EFDA`, Superseded grey `E7E6E6`), High priority bold red text, Medium/Low confidence and `None` due-basis tinted, High severity red. For text-contains rules use `FormulaRule` with `SEARCH`, not `CellIsRule`.
-
-**Summary sheet** — title block, then meeting metadata, then live counts, then the key points table. Counts must be **formulas over the other sheets, never Python-computed numbers**, so they stay true as people work the tracker:
-
-```
-=COUNTA('Action Items'!A3:A200)
-=COUNTIF('Action Items'!I3:I200,"Open")
-=COUNTIFS('Action Items'!H3:H200,"High",'Action Items'!I3:I200,"Open")
-=COUNTIF('Action Items'!G3:G200,"None")
-=COUNTIF(Decisions!D3:D200,"Decided*")
-=COUNTIF(Decisions!D3:D200,"Deferred*")
-=COUNTIF('Open Questions'!H3:H200,"Open")
-=COUNTIF('Risks and Compliance'!G3:G200,"High")
-=COUNTIF('Carry Forward'!F3:F200,"Still open*")
+```bash
+python3 scripts/build_report.py content.json --out "<folder>/Meeting_Report_<Workstream>_<YYYY-MM-DD>.xlsx"
 ```
 
-Use the trailing `*` wildcards — status values carry qualifiers like `Decided (clarification)` and `Still open - restated`, and an exact-match COUNTIF silently undercounts them.
+It builds the workbook, recalculates it through LibreOffice (resolving the binary on Linux,
+macOS and Windows), and prints the row counts and recalc status as JSON. If LibreOffice is
+absent it says so and continues — the workbook is still correct, because Excel recalculates on
+open; only automated verification of the counts is unavailable.
 
-**How to Use sheet** — bilingual legend: what each sheet is for, what each Due basis and Confidence value means, that Status is a dropdown driving the Summary counts, that Medium/Low confidence rows must be checked before circulating, and that Sr numbers are never renumbered.
+### content.json schema
 
-## Step 8 — Verify before delivering
+Every field is a string unless noted. Omit a key and it renders empty; never invent a value to
+fill one.
 
-1. **Recalculate.** openpyxl writes formulas with no cached values, so every formula reads as empty until LibreOffice computes it:
-   ```bash
-   soffice --headless --norestore --convert-to xlsx --outdir <tmp>/out <tmp>/in.xlsx
-   ```
-   Copy the result back over the output file. Confirm data validations and conditional formatting survived the round trip.
-2. **Scan for `#` error values** across all sheets — expect zero.
-3. **Check the counts are arithmetically sane** — decided + deferred must equal the Decisions row count. A silent undercount here means a wildcard is missing.
-4. **Verify quotes verbatim.** `grep -F` each Evidence quote against the converted transcript. Every one must match. A quote that does not match means the reading drifted — fix the row, do not soften the quote.
-5. **Re-read every Medium and Low confidence row** and confirm the caveat is stated in the Evidence cell in square brackets.
+```json
+{
+  "meeting": {
+    "title_en": "", "title_hi": "", "workstream": "", "type": "",
+    "date": "3 September 2026", "date_iso": "2026-09-03",
+    "participants": "", "recorded_by": "", "source": ""
+  },
+  "key_points": [["english", "hindi"]],
+  "actions": [{
+    "sr": 1, "en": "", "hi": "", "owner": "", "raised_by": "", "due": "",
+    "due_basis": "Explicit|Relational|Conditional|None",
+    "priority": "High|Medium|Low", "status": "Open",
+    "confidence": "High|Medium|Low", "evidence": ""
+  }],
+  "decisions": [{
+    "sr": 1, "en": "", "hi": "", "type": "Decided|Deferred", "by": "",
+    "pending_on": "", "rationale_en": "", "rationale_hi": "", "evidence": ""
+  }],
+  "questions": [{
+    "sr": 1, "en": "", "hi": "", "answer_by": "",
+    "impact_en": "", "impact_hi": "", "raised_in": "", "status": "Open"
+  }],
+  "risks": [{
+    "sr": 1, "en": "", "hi": "", "category": "", "exposure_en": "", "exposure_hi": "",
+    "severity": "High|Medium|Low", "owner": "", "mitigation": "", "evidence": ""
+  }],
+  "carry_forward": [{
+    "sr": 1, "en": "", "hi": "", "owner": "", "first_raised": "", "status": "", "note": ""
+  }]
+}
+```
+
+`type` may carry a qualifier — `Decided (clarification)`, `Still open - restated` — and the
+Summary formulas use wildcards so those still count. Keep the qualifier after the base word.
+
+## Step 8 — Verify
+
+One command, not one shell call per row:
+
+```bash
+python3 scripts/verify_report.py "<the .xlsx>" "<the converted transcript .txt>"
+```
+
+It checks every Evidence quote against the transcript, scans all sheets for formula errors,
+tests that the decided/deferred counts add up, and lists the Medium and Low confidence rows.
+Exit 0 is clean; exit 1 means fix something.
+
+**A quote failure means your reading drifted — correct the row, never soften the quote.** The
+commonest causes are dropping a stutter or filler word, and normalising a mis-transcribed name
+or acronym inside the quotation marks.
+
+Re-run until it passes. Rows listed under `needs_human_confirmation` are not failures; they are
+what you flag to the reader in Step 9.
 
 ## Step 9 — Deliver
 
